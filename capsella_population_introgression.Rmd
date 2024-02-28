@@ -19,44 +19,19 @@ Plotting and recording the admixture analysis in *Capsella bursa-pastoris* for a
 admix_dir = "~/Documents/PhD/Research/admixture/"
 ```
 
-####### Needs Updating
-First, I need to get a list of only the Cbp samples in the VCF I have created
-```{r}
-## To Do: Clean up and update loading sample information
+```{r capsella sequenced information}
+wgs <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_combined_wgs.txt", sep = "\t", header = T)
 
-# load metadata
-wgs <- read.delim("~/Documents/PhD/Research/old_local_ancestry_inference/ancestry_informative_sites/Capsella_WGS_Sample_List.txt", header=T)
-
-# load rebecca meta
-panko <- read.csv("~/Documents/PhD/Research/ahmm_local_inference/NYC Capsella bursa-pastoris bulking & tissue log_12.5.xlsb.xlsx - full population info.csv")
-
-#clean panko dataset info
-panko$sample_id <- paste(panko$Population.., panko$Plant.., sep = "_")
-
-sm_panko <- panko[c("sample_id", "Latitude", "Longitude", "City", "State")]
-
-# load list of sample names
-vcf_samples <- read.delim("~/Desktop/vcf_samples.txt", header=F)
-```
-
-```{r}
-# join information
-joined <- left_join(vcf_samples, wgs, join_by("V1" == "sample_name"))
-
-joined <- joined[ ,c("V1", "species", "latitude", "longitude", "note")]
-
-joined$species <- joined$species %>% replace_na("Capsella bursa-pastoris")
-
-cbp <- joined[joined$species == "Capsella bursa-pastoris",]
-
-write.table(cbp, file="cbp_inVCF.txt", quote = F, sep = "\t", row.names = F, col.names = F)
+# join capsella information with VCF sample info
+# change RP sample names to match database
+#sample_name <- str_replace_all(a3$sample_name, "_S[0-9]+", "") #removes trailing _Snumber from rebecca's samples
 ```
 
 Load in the ADMIXTURE output data
 
 ```{r import admixture output files}
 # read in the PLINK fam file which has the sample name information in the same order as the admixture output files
-fam <- read.delim(paste0(admix_dir, "test.fam"), header=FALSE)
+fam <- read.delim(paste0(admix_dir, "plink2_pruned_cbp.fam"), header=FALSE)
 
 # read in Cross Validation (cv) error log
 cv <- read.delim(paste0(admix_dir, "cv_error.log"), header = FALSE, sep = ":")
@@ -73,14 +48,18 @@ for (file in lst) {
 }         
 ```
 
+
 Cross validation of lowest error K groups
 ```{r CV validation}
 # crude plot of cross validation error rates; indices correspond to K
 plot(cv$V2)
 
-# get index of whichever K grouping has smallest CV error
-#K = which.min(cv$V2)
-K = 3
+# get slopes of change between CV error rates; there is definitely a better way to think about this
+# get index of shallowest negative slope
+slopes <- (lead(cv$V2)-cv$V2)/(lead(1:6)-c(1:6)) # slopes
+n.slopes <- slopes[slopes < 0] #only negative slopes
+K = which.max(n.slopes) # shallowest negative slope is biggest number
+#K = 3
 print(K)
 ```
 
@@ -89,61 +68,22 @@ print(K)
 ancestry_dat <- cbind(fam[,2], ancestry_propsK[[K]])
 
 # change column names to vector of sample name and various K populations
-colnames(ancestry_dat) <- c("sample_name", paste0("pop", c(1:K)))
+colnames(ancestry_dat) <- c("vcf_sample_name", paste0("pop", c(1:K)))
 ```
-
-```{r}
-# outdated but leaving here for correction
-temp3 <- cbind(fam, dat[[6]])
-
-colnames(temp3) <- c("famID","sample_name","momID","dadID","sex","phenotype","pop1","pop2", "pop3")
-
-temp3 <- temp3[,c("sample_name", "pop1", "pop2","pop3")]
-
-#add location information?
-# would want to use the coalesce function here 
-a3 <- left_join(temp3, wgs)
-
-a3 <- a3[ ,c("sample_name","pop1","pop2","pop3","latitude", "longitude", "citation", "note")]
-
-# change RP sample names to match database
-a3$sample_name <- str_replace_all(a3$sample_name, "_S[0-9]+", "") #removes trailing _Snumber from rebecca's samples
-
-# add location information from RP
-b3 <- left_join(a3, sm_panko, join_by("sample_name" == "sample_id"))
-
-# coalesce the location information
-c3 <- b3 %>% mutate(lat = coalesce(latitude, Latitude), long = coalesce(longitude, Longitude))
-
-# then finally only keep columns wanted
-d3 <- c3[, c("sample_name","pop1","pop2", "pop3", "lat", "long", "citation","note","State")]
-
-# fill Panko citations
-d3$citation <- as.character(d3$citation) %>% replace_na("R_Panko")
-#reorder based on citation
-dplus3 <- with(d3, d3[order(citation),])
-
-dplus3$sample_name <- factor(dplus3$sample_name, levels = dplus3$sample_name)
-
-k3plus <- pivot_longer(dplus3, cols = c("pop1", "pop2", "pop3"), names_to = "ancestry", values_to = "proportion")
-#k3 <- pivot_longer(keep, cols = c("pop1", "pop2","pop3"), names_to = "ancestry", values_to = "proportion")
-```
-
 
 I want to order the bars by proportion of ancestry.
 ```{r}
-k3 <- pivot_longer(ancestry_dat, cols = colnames(ancestry_dat)[-1], names_to = "ancestry", values_to = "proportion")
+ad_long <- pivot_longer(ancestry_dat, cols = colnames(ancestry_dat)[-1], names_to = "ancestry", values_to = "proportion")
 
 # order rows by ancestry, then proportion
-anc <- k3 %>% arrange(desc(ancestry), proportion)
-
+anc <- ad_long %>% arrange(desc(ancestry), proportion)
 
 # order sample names to be in ancestry proportion order
-lvl.order <- c(anc[1:nrow(fam), "sample_name"])$sample_name
+lvl.order <- c(anc[1:nrow(fam), "vcf_sample_name"])$vcf_sample_name
 #anc$sample_name <- factor(anc$sample_name, levels = unique(anc$sample_name))
-anc$sample_name <- factor(anc$sample_name, levels = lvl.order)
+anc$vcf_sample_name <- factor(anc$vcf_sample_name, levels = lvl.order)
 
-ggplot(anc, aes(fill=ancestry, y=proportion, x=sample_name)) + 
+ggplot(anc, aes(fill=ancestry, y=proportion, x=vcf_sample_name)) + 
   geom_bar(position="fill", stat="identity") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 7),legend.position="none",panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "#E64B35FF", "pop3" = "orchid1")) + xlab("sample name")
 
@@ -165,6 +105,7 @@ K3_clusters <- colnames(dplus_pop3)[apply(dplus_pop3,1, which.max)]
 #### REMEBER THE POPULATIONS DO NOT MATCH BETWEEN K2 AND K3!!!!! IT'S AN ARBITRARY NAME FOR A CLUSTER
 #admix_cluster_assignment <- data.frame(sample_name = dplus2$sample_name, k2_pop = K2_clusters, k3_pop = K3_clusters)
 ```
+
 ```{r}
 #object admix_cluster_assignment generated in cbp_admixture
 #admix_cluster_assignment <- read.delim("~/Documents/PhD/Research/admixture/admix_cluster_assignment.txt")
@@ -246,15 +187,15 @@ vit_out <- lapply(vit, function(x) {data.frame(x) %>% mutate(ancestry = ifelse(a
 
 ```{r}
 # concatenate the data tables for all the samples making a new column identifying the sample
-vit_all <- data.table::rbindlist(vit_out, idcol = "sample_name")
+vit_all <- data.table::rbindlist(vit_out, idcol = "vcf_sample_name")
 
-# explicitly make 'sample_name' a factor and order by ancestry proportion
-vit_all$sample_name <- factor(vit_all$sample_name, levels = lvl.order)
+# explicitly make 'vcf_sample_name' a factor and order by ancestry proportion
+vit_all$vcf_sample_name <- factor(vit_all$vcf_sample_name, levels = lvl.order)
 ```
 
 
 ```{r landscape plot, eval=FALSE, echo=FALSE}
-ggplot() + geom_segment(data = subset(vit_all, chrom == "SCF_9"), aes(color= ancestry, x=sample_name, xend=sample_name, y=start, yend=end), size = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 9") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+ggplot() + geom_segment(data = subset(vit_all, chrom == "SCF_9"), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 9") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
 
 #ggsave("nyc_viterbi_SCF9_landscape.png", units = "in", height = 7, width = 12)
 ```
@@ -264,37 +205,67 @@ NA named individual in this sample set is 774. Sample is in ancestry HMM analysi
 ###### Introgression .bed files
 To use this tool, I need a bed file of introgressed regions for each sample separately.
 
+I will start by combinging the viterbi decoding with the whole genome sequencing data
+```{r}
+# make new column with the trailing S[number] removed from Panko samples
+vit_all$sample_name <- str_remove_all(vit_all$vcf_sample_name, "_S[0-9]+")
+
+# combine the sample info with viterbi decoding
+vit_all <- left_join(vit_all, wgs)
+
+```
+
 Starting with the NYC samples
 
 ```{r}
 # select rubella tracts
-nyc_rubella_tracts <- vit_all[vit_all$ancestry == "rubella" & (vit_all$State == "NY" | vit_all$State == "NJ"),] #the state column does not exist yet but it can and will!
-
-# first need to only do comparisons within scaffolds
-nyc_rubella_scf_tracts <- split(nyc_rubella_tracts, nyc_rubella_tracts$chrom) # each list element is a scaffold, multiple rows for each sample
-
-# separate the genes the same way
-genes_scf_tracts <- split(genes_gff_gr, genes_gff_gr$chrom)
+ny_rubella_tracts <- vit_all[vit_all$ancestry == "rubella" & (vit_all$state == "NY" | vit_all$state == "NJ"),]
 ```
 
 ```{r prep data to be turned into bed file}
 # select only useful columns
-temp <- nyc_rubella_tracts[,c("sample_id","chrom","start","end")]
+temp <- ny_rubella_tracts[,c("vcf_sample_name","chrom","start","end")]
 
 # break up data frame by sample
-nyc_rub_by_sample <- split(temp, temp$sample_id)
+ny_rub_by_sample <- split(temp, temp$vcf_sample_name)
 
 # drop the sample id column from all
-nyc_rub_by_sample <- lapply(nyc_rub_by_sample, function(x){
-  x[,-"sample_id"]
+ny_rub_by_sample <- lapply(ny_rub_by_sample, function(x){
+  x[,-"vcf_sample_name"]
 })
 ```
 
 save each to a separate .bed file
 ```{r, eval=FALSE}
-# for(i in 1:length(nyc_rub_by_sample)){
-#   write.table(nyc_rub_by_sample[[i]], paste0(names(nyc_rub_by_sample)[i], "_rubella_chunks.bed"), col.names = F, quote = F, row.names = F, sep = "\t")
+# for(i in 1:length(ny_rub_by_sample)){
+#   write.table(ny_rub_by_sample[[i]], paste0(names(ny_rub_by_sample)[i], "ny_rubella_chunks.bed"), col.names = F, quote = F, row.names = F, sep = "\t")
 # }
 ```
 
+Now do the same for Mediterranean samples.
+
+```{r}
+# select rubella tracts
+med_rubella_tracts <- vit_all[vit_all$ancestry == "rubella" & (vit_all$state == "NY" | vit_all$state == "NJ"),] #should be some other identifier
+```
+
+```{r prep data to be turned into bed file}
+# select only useful columns
+temp <- med_rubella_tracts[,c("vcf_sample_name","chrom","start","end")]
+
+# break up data frame by sample
+med_rub_by_sample <- split(temp, temp$vcf_sample_name)
+
+# drop the sample id column from all
+med_rub_by_sample <- lapply(med_rub_by_sample, function(x){
+  x[,-"vcf_sample_name"]
+})
+```
+
+save each to a separate .bed file
+```{r, eval=FALSE}
+# for(i in 1:length(med_rub_by_sample)){
+#   write.table(med_rub_by_sample[[i]], paste0(names(med_rub_by_sample)[i], "med_rubella_chunks.bed"), col.names = F, quote = F, row.names = F, sep = "\t")
+# }
+```
 #### Genic Content
