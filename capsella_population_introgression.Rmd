@@ -126,7 +126,10 @@ k3_3 <- admix_cluster_assignment[which(admix_cluster_assignment$k3_pop == "pop3"
 # Introgression in Capsella bursa-pastoris
 
 ```{r ancestry colors}
-anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "pink", heterozygous = "grey")
+# another option for pink color is #C5839A; I was using "pink" before (FFC0CB), #E2A2B3, or just 'mistyrose'
+anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#96938E")
+
+# a warm gray or green grey need to be quite dark for it to be appropriate for all forms of colorblindness
 ```
 
 Load Ancestry HMM output
@@ -281,14 +284,15 @@ nyc_inter <- nyc_inter[,1:4]
 ```
 
 ```{r NY Crubella chunks gradient}
+# mistyrose = #FFE4E1, violetred4 = #8B2252
 # gradient plot where darker colors mean more individuals share an introgressed chunk
-ggplot() + geom_segment(data = nyc_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), size = 10) + scale_color_continuous(high = "#132B43", low = "#56B1F7") + ggtitle("New York introgressed regions")
+ggplot() + geom_segment(data = nyc_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), size = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed regions") + theme_classic()
 ```
 
 Let's look at the distributions of individuals that share chunks for each scaffold to get a better idea of how common is common for each scaffold.
 ```{r}
-ggplot() + geom_histogram(data = nyc_inter, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
-  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions")
+ggplot() + geom_histogram(data = nyc_inter, binwidth = 1, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
+  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
 ```
  
 I will define an introgressed segment as common if it is present in at least 33 individuals (a little over 50% of our NYC samples)
@@ -297,8 +301,6 @@ I will define an introgressed segment as common if it is present in at least 33 
 # get the common chunks
 nyc_common_chunks <- nyc_inter[nyc_inter$num >= 33,]
 ```
-
-
 
 
 ```{r join common with nyc data}
@@ -325,13 +327,13 @@ med_inter <- med_inter[,1:4]
 
 ```{r NY Crubella chunks gradient}
 # gradient plot where darker colors mean more individuals share an introgressed chunk
-ggplot() + geom_segment(data = med_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "#132B43", low = "#56B1F7") + ggtitle("Mediterranean introgressed regions")
+ggplot() + geom_segment(data = med_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("Mediterranean introgressed regions") + theme_classic()
 ```
 
 Let's look at the distributions of individuals that share chunks for each scaffold to get a better idea of how common is common for each scaffold.
 ```{r}
 ggplot() + geom_histogram(data = med_inter, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
-  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions")
+  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
 ```
  
 I will define an introgressed segment as common here if it is present in at least 4 individuals from our Mediterranean group
@@ -375,7 +377,8 @@ pi_v1 %>%
   ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
   geom_line() +
   facet_wrap(~pop) +
-  ggtitle("Pi across whole genome")
+  ggtitle("Pi across whole genome") +
+  theme_bw()
 ```
 
 Now for the nyc and mediterranean introgressed regions on their own.
@@ -389,8 +392,11 @@ pi_nyc %>%
   ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
   geom_line() +
   facet_wrap(~pop) +
-  ggtitle("Pi in NYC introgressed regions only")
+  ggtitle("Pi in NYC introgressed regions only") +
+  
 ```
+An interesting comparison here might be between NYC samples and other (northern) European cluster samples.
+
 ```{r}
 ### With the newly generated VCF
 pi_med <- read.delim("~/Documents/PhD/Research/capsella_introgression_git_temp/med_int_v1_pi.txt")
@@ -404,3 +410,32 @@ pi_med %>%
   ggtitle("Pi in Mediterranean introgressed regions only")
 ```
 Not sure that this means yet, but my first thoughts are that for commonly introgressed regions in the mediterranean
+
+#### SIDEBAR
+I wonder if we zoom in on Pi in NYC for introgressed regions that are present in all 65 individuals.
+```{r}
+# select regions present in all individiuals
+nyc_retained_chunks <- nyc_inter[nyc_inter$num == 65,]
+
+# save whole genome data as ggplot
+wg_nyc_pi <- pi_v1[pi_v1$pop == "p2_nyc",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi))+
+  geom_line()
+
+# plot only those regions?
+pi_nyc[pi_nyc$pop == "p2_nyc",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  ggtitle("Pi in NYC introgressed regions only")
+
+# plot only those regions?
+int_r_nyc_pi <- pi_nyc[pi_nyc$pop == "p2_nyc",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  facet_wrap(~chromosome)
+  ggtitle("Pi in NYC introgressed regions shared by >=33 genotypes")
+```
+
