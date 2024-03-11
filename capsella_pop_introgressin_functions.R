@@ -2,6 +2,23 @@
 # Maya Wilson Brown
 # March 11, 2024
 
+###### MAP BASES
+states <- ne_states(returnclass = "sf", country="United States of America")
+
+world <- ne_countries(returnclass = "sf", continent = c("Europe", "Asia", "Africa"))
+
+# map of New York and New Jersey study area
+ny_map <- ggplot()+ geom_sf(data= states, fill="gray93")+ 
+  coord_sf(xlim = c(-74.5, -73),  ylim = c(40.5, 41), expand = FALSE) + 
+  theme_light() + 
+  theme(axis.text.x= element_text(size = 5), axis.text.y= element_text(size = 5))
+
+# map of eurasia
+eurasia <- ggplot()+ geom_sf(data= world, fill="gray93")+ 
+  coord_sf(xlim = c(-30, 179.9),  ylim = c(30, 80.9), expand = FALSE) + 
+  theme_light() + 
+  theme(axis.text.x= element_text(size = 5), axis.text.y= element_text(size = 5))
+
 # Select K
 # K is the number of groupings for which ADMIXTURE has the initial lowest cross validation error rate
 selectK <- function(cv_error_log = cv){
@@ -81,4 +98,18 @@ ancestry_location <- function(ancestry_data, whole_genome_sequencing){
   # update with new location information; matches by sample_name
   anc_info <- rows_patch(anc_info, new_locs)
   return(anc_info)
+}
+
+## Assign majority ancestry group
+assign_ancestry <- function(ancestry_proportion_list, K, sample_names_fam){
+  # select population proportion columns
+  props <- ancestry_proportion_list[[K]]
+  
+  # for each row (apply,1) select the column name in which the maximum value (of ancestry proportion) is found; replace the column indicator 'V' with 'pop'
+  group <- str_replace(colnames(props)[apply(props,1, which.max)], "V", "pop")
+  
+  # add sample names back
+  key <- as.data.frame(cbind(sample_names_fam$V2, group))
+  colnames(key) <- c("vcf_sample_name", "anc_group")
+  return(key)
 }

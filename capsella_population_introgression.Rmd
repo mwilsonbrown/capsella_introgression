@@ -14,6 +14,12 @@ library(rnaturalearth) # for maps
 #library(forcats) # do I actually use this package for anything?
 ```
 
+I have written functions for the plots I want and selecting K.
+We can source the fuctions from capsella_pop_introgression_functions.R
+```{r}
+source("~/Documents/PhD/Research/capsella_introgression/capsella_pop_introgressin_functions.R")
+```
+
 # Capsella population admixture results and cluster assignment
 Plotting and recording the admixture analysis in *Capsella bursa-pastoris* for analyzing group differences in introgressed regions
 
@@ -93,29 +99,9 @@ ggplot(anc, aes(fill=ancestry, y=proportion, x=vcf_sample_name)) +
 #ggsave("./plots_temp/cbp_k3.png", width = 13, height = 7, units = "in")
 ```
 
-
-```{r, eval=FALSE}
-dplus_pop3 <- dplus3[,c("pop1","pop2","pop3")]
-
-K3_clusters <- colnames(dplus_pop3)[apply(dplus_pop3,1, which.max)]
-
-#dplus_pop2 <- dplus2[,c("pop1","pop2")]
-#K2_clusters <- colnames(dplus_pop2)[apply(dplus_pop2,1, which.max)]
-
-
-#cluster assignments for samples
-
-#### REMEBER THE POPULATIONS DO NOT MATCH BETWEEN K2 AND K3!!!!! IT'S AN ARBITRARY NAME FOR A CLUSTER
-#admix_cluster_assignment <- data.frame(sample_name = dplus2$sample_name, k2_pop = K2_clusters, k3_pop = K3_clusters)
-```
-
-```{r}
-#object admix_cluster_assignment generated in cbp_admixture
-#admix_cluster_assignment <- read.delim("~/Documents/PhD/Research/admixture/admix_cluster_assignment.txt")
-```
-
 Figuring out exactly who is in each group and where they are from.
 ```{r eval=FALSE}
+# just left in for quick referencing
 # When K=3
 k3_1 <- admix_cluster_assignment[which(admix_cluster_assignment$k3_pop == "pop1"),]
 # Taiwan, South East and North East China
@@ -124,6 +110,11 @@ k3_2 <- admix_cluster_assignment[which(admix_cluster_assignment$k3_pop == "pop2"
 # germany, poland, netherlands, iceland, sweden russia, NW China, NE France near Germany, near Scotland, SW France
 
 k3_3 <- admix_cluster_assignment[which(admix_cluster_assignment$k3_pop == "pop3"),] #Italy Spain, Greece, Jordan, Algeria, Turkey
+```
+
+Clusters on a map
+```{r all Capsella maps}
+
 ```
 
 # European Only admixture
@@ -145,12 +136,6 @@ for (file in lst) {
   file_path <- file.path(eu_admix_dir, file)  # Get the full file path
   eu_ancestry_propsK[[file]] <- read.table(file_path, header = F)  # Read the file and store in the list
 }         
-```
-
-I have written functions for the plots I want and selecting K.
-We can source the fuctions from capsella_pop_introgression_functions.R
-```{r}
-source("~/Documents/PhD/Research/capsella_introgression/capsella_pop_introgressin_functions.R")
 ```
 
 ```{r}
@@ -185,83 +170,71 @@ eu_k2_anc[eu_k2_anc$ancestry == "pop1" & eu_k2_anc$proportion > 0.8,]
 K = 4 also has a reasonably small cross validation error rate. It may be worth plotting all of these on a map to make them easier to interpret.
 
 ###### Ancestry maps
-```{r combine ancestry with location info}
-# make new column with the trailing S[number] removed from Panko samples
-eu_k2_anc$sample_name <- str_remove_all(eu_k2_anc$vcf_sample_name, "_S[0-9]+")
-
-# combine the sample info with ancestry
-eu_k2_anc_info <- left_join(eu_k2_anc, wgs)
-```
-
-A majority of the samples have location data in latitude and longitude. For those that do not, I will check to see if I can generally place them on a map.
-```{r no location genotypes}
-# select those without latitude and longitude
-no_locs <- unique(anc_info[is.na(anc_info$latitude) & is.na(anc_info$longitude), c("sample_name","citation", "note")])
-```
-
-All have a general location in the notes aside from the two samples from Kryvokhyzha. I am okay with those two dropping out of the dataset when I plot a map for now. For the rest, I will use a latitude and lonigtude given from their general location.
-```{r}
-#get city and state
-no_locs$loc_name <- str_split_i(no_locs$note, pattern = ";", i=1)
-#further split since I am having trouble passing directly to geocode
-no_locs$city <- str_split_i(no_locs$loc_name, pattern = ",", i=1)
-no_locs$country <-  str_split_i(no_locs$loc_name, pattern = ",", i=2)
-
-# takes about 1 second per query
-new_locs <- no_locs %>%
-  geocode(city = city,
-          country = country,
-          lat = "latitude",
-          long = "longitude")
-
-new_locs <- new_locs[c("sample_name", "latitude", "longitude")]
-```
-
-Collate the new location information with larger ancestry dataframe.
-```{r collate location data to all}
-# update with new location information; matches by sample_name
-anc_info <- rows_patch(anc_info, new_locs)
-
-# check that only the two remaining samples do not have location info
-# unique(anc_info[is.na(anc_info$latitude) & is.na(anc_info$longitude), c("sample_name","citation", "note")])
-```
 
 ```{r}
 eu_k2_anc_info <- ancestry_location(eu_k2_anc, wgs)
 ```
 
 ### Map Time!
-```{r map of New York and New Jersey}
-states <- ne_states(returnclass = "sf", country="United States of America")
 
-# map of North America
-ny_map <- ggplot(data= states)+ geom_sf(fill="gray93")+ coord_sf(xlim = c(-74.5, -73),  ylim = c(40.5, 41), expand = FALSE) + theme_light() + theme(axis.text.x= element_text(size = 5), axis.text.y= element_text(size = 5))
-```
-
-
-
-```{r}
-ny_map + geom_point(data=subset(eu_k2_anc_info, state == c("NY", "NJ")), aes(x=longitude, y=latitude))
-```
 Color by ancestry proportion
 
 Assigning ancestry by k groups
+
 ```{r}
-#ancestry_datK <- list()
-# for each K grouping
-k2 <- ancestry_propsK[,c("pop1","pop2","pop3")]
+# get sample to majority ancestry population key
+k2_key <- assign_ancestry(eu_ancestry_propsK, K=2, eu_fam)
 
-K3_clusters <- colnames(dplus_pop3)[apply(dplus_pop3,1, which.max)]
-
-#dplus_pop2 <- dplus2[,c("pop1","pop2")]
-#K2_clusters <- colnames(dplus_pop2)[apply(dplus_pop2,1, which.max)]
-
-
-#cluster assignments for samples
-
-#### REMEBER THE POPULATIONS DO NOT MATCH BETWEEN K2 AND K3!!!!! IT'S AN ARBITRARY NAME FOR A CLUSTER
-#admix_cluster_assignment <- data.frame(sample_name = dplus2$sample_name, k2_pop = K2_clusters, k3_pop = K3_clusters)
+# join key to location information
+eu_k2 <- left_join(eu_k2_anc_info, k2_key)
 ```
+
+Color by ancestry group.
+
+REMEBER WHEN PLOTTING, THE POPULATIONS DO NOT MATCH BETWEEN Ks!!!!! IT'S AN ARBITRARY NAME FOR A CLUSTER. POP1 WHEN K=4 IS NOT THE SAME AS POP1 WHEN K=2.
+
+```{r}
+ny_map + geom_point(data=subset(eu_k2, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21)
+```
+```{r}
+eurasia + geom_point(data=subset(eu_k2, citation != "R. Panko"), aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21)
+```
+
+Get data for K=4 and plot on maps
+```{r}
+# data for k = 4 on European group data
+eu_k4 <- ancestry_bars(eu_ancestry_propsK, K = 4, sample_names_fam = eu_fam, ggplot_opt = scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482")))
+
+# save the ancestry/plot data
+eu_k4_anc <- eu_k4$data
+# make just the plot show up
+plot(eu_k4)
+```
+
+
+```{r}
+# k=4 data prep
+eu_k4_anc_info <- ancestry_location(eu_k4_anc, wgs)
+
+# get sample to majority ancestry population key
+k4_key <- assign_ancestry(eu_ancestry_propsK, K=4, eu_fam)
+
+# join key to location information
+eu_k4 <- left_join(eu_k4_anc_info, k4_key)
+```
+
+```{r}
+# new york map
+ny_map + geom_point(data=subset(eu_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape=21) +
+  scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+```
+
+```{r}
+# world map
+eurasia + geom_point(data=subset(eu_k4, citation != "R. Panko"), aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) +
+  scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+```
+From the above plots, we can see that population 4 when k=4 is a population "unique" to New York.
 
 # Introgression in Capsella bursa-pastoris
 
@@ -296,7 +269,8 @@ for (file in tbl) {
 }                                                          
 ```
 
-I got ride of the posterior probability decoding, so no plots are here and at this time, I do nothing with the posterior data.
+I got rid of the posterior probability decoding, so no plots are here and at this time, I do nothing with the posterior data.
+
 # Viterbi decoding of ancestry
 
 ```{r load viterbi files}
