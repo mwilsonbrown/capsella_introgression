@@ -1,0 +1,84 @@
+# Functions for Capsella population introgression
+# Maya Wilson Brown
+# March 11, 2024
+
+# Select K
+# K is the number of groupings for which ADMIXTURE has the initial lowest cross validation error rate
+selectK <- function(cv_error_log = cv){
+  slopes <- (lead(cv_error_log$V2)-cv_error_log$V2)/(lead(1:nrow(cv_error_log))-c(1:nrow(cv_error_log))) # slopes
+  n.slopes <- slopes[slopes < 0] #only negative slopes
+  K = which.max(n.slopes) # shallowest negative slope is biggest number (slope closest to zero)
+  
+  # plot
+  cv.plot <- plot(cv_error_log$V2, ylab = "cross validation error rate", xlab = "K groups")
+  
+  # save returns as list ro capture rather than print K
+  #return(as.list(K, cv.plot))
+  return(K) #just prints K
+  return(cv.plot)
+}
+
+# Ancestry Bars Plot
+ancestry_bars <- function(ancestry_proportion_list, K, sample_names_fam, ggplot_opt = NULL){
+  # bind sample information to lowest CV error data frame
+  ancestry_dat <- cbind(sample_names_fam[,2], ancestry_proportion_list[[K]])
+  
+  # change column names to vector of sample name and various K populations
+  colnames(ancestry_dat) <- c("vcf_sample_name", paste0("pop", c(1:K)))
+  
+  # make data long form
+  ad_long <- pivot_longer(ancestry_dat, 
+                          cols = colnames(ancestry_dat)[-1], 
+                          names_to = "ancestry", 
+                          values_to = "proportion")
+  # order rows by ancestry, then proportion columns
+  anc <- ad_long %>% arrange(desc(ancestry), proportion)
+  # order sample names to be in ancestry proportion order
+  lvl.order <- c(anc[1:nrow(sample_names_fam), "vcf_sample_name"])$vcf_sample_name
+  anc$vcf_sample_name <- factor(anc$vcf_sample_name, levels = lvl.order) # the levels argument here is the one that matters
+  
+  # adding ggplot options, for if I want to add custom colors for populations
+  if(!is.null(ggplot_opt)) {
+    plot <- ggplot(anc, aes(fill=ancestry, y=proportion, x=vcf_sample_name)) + 
+      geom_bar(position="fill", stat="identity") +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 7),legend.position="none",panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + 
+      xlab("sample name") + ggplot_opt
+  } else {
+    plot <- ggplot(anc, aes(fill=ancestry, y=proportion, x=vcf_sample_name)) + 
+      geom_bar(position="fill", stat="identity") +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 7),legend.position="none",panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank()) + 
+      xlab("sample name")
+  }
+  return(plot)
+  return(anc)
+}
+
+#### Combine ancestry information with location data
+#dyplr needed for rows_patch; stringr needed for str_remove and str_split; tidygeocoder needed for geocode
+
+ancestry_location <- function(ancestry_data, whole_genome_sequencing){
+  # make new column with the trailing S[number] removed from Panko samples
+  ancestry_data$sample_name <- str_remove_all(ancestry_data$vcf_sample_name, "_S[0-9]+")
+  
+  # combine the sample info with ancestry
+  anc_info <- left_join(ancestry_data, whole_genome_sequencing)
+  # select those without latitude and longitude
+  no_locs <- unique(anc_info[is.na(anc_info$latitude) & is.na(anc_info$longitude), c("sample_name","citation", "note")])
+  #get city and state
+  no_locs$loc_name <- str_split_i(no_locs$note, pattern = ";", i=1)
+  #further split since I am having trouble passing directly to geocode
+  no_locs$city <- str_split_i(no_locs$loc_name, pattern = ",", i=1)
+  no_locs$country <-  str_split_i(no_locs$loc_name, pattern = ",", i=2)
+  
+  # takes about 1 second per query
+  new_locs <- no_locs %>%
+    geocode(city = city,
+            country = country,
+            lat = "latitude",
+            long = "longitude")
+  
+  new_locs <- new_locs[c("sample_name", "latitude", "longitude")]
+  # update with new location information; matches by sample_name
+  anc_info <- rows_patch(anc_info, new_locs)
+  return(anc_info)
+}
