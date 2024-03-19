@@ -21,8 +21,12 @@ source("~/Documents/PhD/Research/capsella_introgression/capsella_pop_introgressi
 ```
 
 ```{r directory variables}
-admix_dir = "~/Documents/PhD/Research/admixture/"
+# all Capsella bursa-pastoris in vcf file
+admix_dir = "~/Documents/PhD/Research/admixture/all_cbp"
+# only Cbp in Pop3 when k=3 in all CBP admixture result (generally northern europe and NYC)
 eu_admix_dir = "~/Documents/PhD/Research/admixture/european/"
+# only ancestral range of CBP in Eurasia
+eurasian_dir = "~/Documents/PhD/Research/admixture/eurasian/"
 ```
 
 ```{r capsella sequenced information}
@@ -59,6 +63,8 @@ Cross validation of lowest error K groups
 K = selectK(cap_cv)
 print(K)
 ```
+
+
 ```{r}
 # make ancestry bars plot
 cap_k3 <- ancestry_bars(cap_ancestry_propsK, K = K, cap_fam, scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "#E64B35FF", "pop3" = "orchid1")))
@@ -66,7 +72,7 @@ cap_k3 <- ancestry_bars(cap_ancestry_propsK, K = K, cap_fam, scale_fill_manual(v
 # plot
 cap_k3
 # save image
-#ggsave("./plots_temp/cbp_k3.png", width = 13, height = 7, units = "in")
+ggsave("./plots_temp/cbp_k3.png", width = 13, height = 7, units = "in")
 ```
 
 
@@ -98,6 +104,8 @@ Clusters on a map
 ```{r all Capsella maps}
 world + geom_point(data=cap_k3, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) +
   scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "#E64B35FF", "pop3" = "orchid1"))
+
+ggsave("./plots_temp/cbp_k3_map.png", width = 13, height = 7, units = "in")
 ```
 
 # European Only admixture
@@ -136,6 +144,9 @@ eu_k2 <- ancestry_bars(eu_ancestry_propsK, K = K, sample_names_fam = eu_fam)
 
 # make just the plot show up
 plot(eu_k2)
+
+# save plot
+ggsave("./plots_temp/eu_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
 
 
@@ -177,9 +188,13 @@ REMEBER WHEN PLOTTING, THE POPULATIONS DO NOT MATCH BETWEEN Ks!!!!! IT'S AN ARBI
 
 ```{r}
 ny_map + geom_point(data=subset(eu_k2, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21)
+
+ggsave("./plots_temp/eu_cbp_k2_ny_map.png", width = 13, height = 7, units = "in")
 ```
 ```{r}
 eurasia + geom_point(data=subset(eu_k2, citation != "R. Panko"), aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21)
+
+ggsave("./plots_temp/eu_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
 
 Get data for K=4 and plot on maps
@@ -189,6 +204,8 @@ eu_k4 <- ancestry_bars(eu_ancestry_propsK, K = 4, sample_names_fam = eu_fam, ggp
 
 # make just the plot show up
 plot(eu_k4)
+
+ggsave("./plots_temp/eu_cbp_k4.png", width = 13, height = 7, units = "in")
 ```
 
 
@@ -205,14 +222,18 @@ eu_k4 <- left_join(eu_k4_anc_info, k4_key)
 
 ```{r}
 # new york map
-ny_map + geom_point(data=subset(eu_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape=21) +
+ny_map + geom_point(data=subset(eu_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape=21, stroke = 2) +
   scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+
+ggsave("./plots_temp/eu_cbp_k4_ny_map.png", width = 13, height = 7, units = "in")
 ```
 
 ```{r}
 # world map
 eurasia + geom_point(data=subset(eu_k4, citation != "R. Panko"), aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) +
   scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+
+ggsave("./plots_temp/eu_cbp_k4_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
 From the above plots, we can see that population 4 when k=4 is a population "unique" to New York.
 
@@ -220,7 +241,64 @@ From the above plots, we can see that population 4 when k=4 is a population "uni
 # confirming all population 4 individuals come from NYC
 unique(eu_k4[eu_k4$anc_group == "pop4", "citation"])
 ```
+#### ADMIXTURE conditioned on K
 
+If we just think about ADMIXTURE and STRUCTURE as ways to select a valuable K number of ancestral groups, it makes sense to run admixture on the Eurasian C. bursa-pastoris samples on their own, and select the best K groups from the ancestral population. Then, using that K, I would run ADMIXTURE on only the NYC populations and assign the NYC population to those K ancestral groups. I am not sure of the best way to match between the populations, but I may just have to look at the allele frequencies in the inferred ancestral populations and match them that way.
+
+I do feel that is analysis has already been done by Kryvohkhyzha and colleagues to some capacity.
+
+```{r import admixture output files}
+# read in the PLINK fam file which has the sample name information in the same order as the admixture output files
+ea_fam <- read.delim(paste0(eurasian_dir, "eurasian_cbp.fam"), header=FALSE)
+
+# read in Cross Validation (cv) error log
+ea_cv <- read.delim(paste0(eurasian_dir, "eurasian_cv_error.log"), header = FALSE, sep = ":")
+
+# list the files in admixture directory matching suffix pattern
+#tbl <- list.files(path = admix_dir, pattern = "*.P") # .P files are allele frequencies of inferred ancestral populations; commented out because I do not use these files
+lst <- list.files(path = eurasian_dir, pattern = "*.Q") # Q files are ancestry fractions for each sample
+
+ea_ancestry_propsK <- list()  # Create an empty list to store the data for each iteration of K groups
+#loop to load sample data
+for (file in lst) {
+  file_path <- file.path(eurasian_dir, file)  # Get the full file path
+  ea_ancestry_propsK[[file]] <- read.table(file_path, header = F)  # Read the file and store in the list
+}         
+```
+
+```{r}
+# plot cv error rate scatter and save selected K to K
+K = selectK(ea_cv)
+```
+K = four would also be valid to look at.
+
+```{r}
+# data for k = 4 on European group data
+ea_k2 <- ancestry_bars(ea_ancestry_propsK, K = K, sample_names_fam = ea_fam)
+
+# make just the plot show up
+plot(ea_k2)
+
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
+```
+Same information largely, but on a map (just to confirm my suspicions).
+```{r}
+# k=4 data prep
+ea_k2_anc_info <- ancestry_location(ea_k2$data, wgs)
+
+# get sample to majority ancestry population key
+k2_key <- assign_ancestry(ea_ancestry_propsK, K=2, ea_fam)
+
+# join key to location information
+ea_k2 <- left_join(ea_k2_anc_info, k2_key)
+```
+
+```{r}
+# world map
+world + geom_point(data=ea_k2, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21)
+
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
+```
 
 # Introgression in Capsella bursa-pastoris
 
@@ -234,28 +312,11 @@ anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#
 Load Ancestry HMM output
 ```{r ancestry_hmm output paths}
 #paths to data output by Ancestry HMM
-## posterior probabilities
-ahmm_post_path <- "~/Documents/PhD/Research/ahmm_local_inference/ahmm_posterior/"
-
 ## viterbi decoding
 ahmm_vit_path <- "~/Documents/PhD/Research/ahmm_local_inference/ahmm_viterbi/"
 
 ```
 
-After running Ancestry HMM on the cluster, I have posterior outputs
-
-```{r load posterior files, eval=FALSE}
-tbl <- list.files(path = ahmm_post_path, pattern = "*.posterior") 
-
-dat <- list()  # Create an empty list to store the data
-#loop to load sample data
-for (file in tbl) {
-  file_path <- file.path(ahmm_post_path, file)  # Get the full file path
-  dat[[file]] <- read.delim(file_path, header = T)  # Read the file and store in the list
-}                                                          
-```
-
-I got rid of the posterior probability decoding, so no plots are here and at this time, I do nothing with the posterior data.
 
 # Viterbi decoding of ancestry
 
@@ -471,7 +532,7 @@ med_common_chunks <- med_inter[med_inter$num >= 4,]
 ```
 
 ### Med rubella tracts does not exist yet because I do not have a way to select
-```{r join common with nyc data}
+```{r join common with med data}
 #prepping to join with larger dataset
 med_common_chunks$vcf_sample_name <- "common"
 med_common_chunks$ancestry <- "rubella"
@@ -540,7 +601,7 @@ Not sure that this means yet, but my first thoughts are that for commonly introg
 
 #### SIDEBAR
 I wonder if we zoom in on Pi in NYC for introgressed regions that are present in all 65 individuals.
-```{r}
+```{r eval=FALSE}
 # select regions present in all individiuals
 nyc_retained_chunks <- nyc_inter[nyc_inter$num == 65,]
 
