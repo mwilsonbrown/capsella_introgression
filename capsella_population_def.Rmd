@@ -27,6 +27,8 @@ admix_dir = "~/Documents/PhD/Research/admixture/all_cbp"
 eu_admix_dir = "~/Documents/PhD/Research/admixture/european/"
 # only ancestral range of CBP in Eurasia
 eurasian_dir = "~/Documents/PhD/Research/admixture/eurasian/"
+# nyc pops conditional on Eurasian clusters
+conditional_dir = "~/Documents/PhD/Research/admixture/nyc_eurasian_conditional/"
 ```
 
 ```{r capsella sequenced information}
@@ -279,8 +281,9 @@ ea_k2 <- ancestry_bars(ea_ancestry_propsK, K = K, sample_names_fam = ea_fam)
 # make just the plot show up
 plot(ea_k2)
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
+
 Same information largely, but on a map (just to confirm my suspicions).
 ```{r}
 # k=4 data prep
@@ -299,6 +302,83 @@ world + geom_point(data=ea_k2, aes(x=longitude, y=latitude, fill = anc_group, co
 
 #ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
+Suspicions confirmed: there are two main populations in the ancestral range; one is in southern and eastern Asia, while the other is mostly in Europe and northwestern China with some overlap.
+
+Given the original population structure inferred at the very top of this document, this suggests a few things: 
+- 2 populations / ancestry groups are most likely. The reason k=3 and k=4 show lower cross validation error rates is probably due to the European, northwestern Chinese cluster being overwhelmed by the number of New York individuals and *their* allele frequencies
+- The European/ northwestern Chinese cluster at the top of the document appears largely admixed with a Mediterranean-like cluster. Again, that is probably not real population structure, but due to the New York City samples overwhelming the allele frequency patterns. Therefore, I suspect that there has been a mild bottlneck from the European
+
+K = 4 just out of curiosity
+
+```{r}
+# data for k = 4 on European group data
+ea_k4 <- ancestry_bars(ea_ancestry_propsK, K = 4, sample_names_fam = ea_fam)
+
+# make just the plot show up
+plot(ea_k4)
+
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
+```
+
+setting up for plotting on a map
+```{r}
+# k=4 data prep
+ea_k4_anc_info <- ancestry_location(ea_k4$data, wgs)
+
+# get sample to majority ancestry population key
+k4_key <- assign_ancestry(ea_ancestry_propsK, K=4, ea_fam)
+
+# join key to location information
+ea_k4 <- left_join(ea_k4_anc_info, k4_key)
+```
+
+```{r}
+# world map
+world + geom_point(data=ea_k4, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21)
+
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
+```
+Now we see the Mediterranean cluster sort of break off into two other population chunks.
+
+The next step would be assigning the NYC populations to these "old world" clusters. I did not know ADMIXTURE had this capability but it does!
+
+Just need to make sure the same set of SNPs is in each dataset (old world and NYC)
+
+From the **Projection analysis** section of the ADMIXTURE manual:
+> ADMIXTURE now allows loading of learned allele frequencies from the .P files. For two
+datasets with the same set of SNPs, clusters can be learned using the unsupervised mode
+of ADMIXTURE on the first dataset; subsequently, the learned clusters and ancestry
+proportions from the first dataset can be provided as input used to project the second
+dataset with the -P option.
+Example: Suppose reference.bed is the PLINK binary file containing reference panels
+and study.bed is the PLINK binary file containing study samples. The following sequence
+of commands can be used to learn population structure from the reference panel and project
+the study individuals on it:
+# Verify the two datasets have the same set of SNPs
+% diff -s reference.bim study.bim
+# Run unsupervised ADMIXTURE with K=2
+% admixture reference.bed 2
+# Use learned allele frequencies as (fixed) input to next step
+% cp reference.2.P study.2.P.in
+# Run projection ADMIXTURE with K=2
+% admixture -P study.bed 2
+
+>The projection approach is particularly useful when the study sample is much larger than
+the reference panel. When the study sample is comparable in size to the reference panel,
+it may be preferable to run unsupervised ADMIXTURE on the combined set since the
+running time scales linearly with the number of samples.
+
+>The same approach can also be used for inferring ancestry on a set of related individuals.
+Pedigree information or existing methods such as PLINK [5], KING [6] or PRIMUS [7] can
+be used to identify the largest subset of unrelated individuals in the dataset. ADMIXTURE
+is then run unsupervised on the largest set of unrelated individuals (using that as the
+reference set in the example above). The rest of the individuals (who can be related to the
+reference set) can then be projected on the resulting population structure.
+
+So that is pretty useful.
+
+###### Comparing summary tools
+Pong, CLUMMP, ConSTRUCT,
 
 # Introgression in Capsella bursa-pastoris
 
@@ -378,6 +458,7 @@ vit_all$sample_name <- str_remove_all(vit_all$vcf_sample_name, "_S[0-9]+")
 vit_all <- left_join(vit_all, wgs)
 
 ```
+
 NYC only introgression plot
 ```{r nyc_introgression_plot}
 ggplot() + geom_segment(data = subset(vit_all, (chrom == "SCF_16" & (state == "NY" | state == "NJ"))), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 16") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
