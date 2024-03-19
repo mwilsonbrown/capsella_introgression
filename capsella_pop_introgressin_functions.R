@@ -42,9 +42,9 @@ selectK <- function(cv_error_log = cv){
 }
 
 # Ancestry Bars Plot
-ancestry_bars <- function(ancestry_proportion_list, K, sample_names_fam, ggplot_opt = NULL){
+ancestry_bars <- function(ancestry_proportion_list, K, list_element = K, sample_names_fam, ggplot_opt = NULL){
   # bind sample information to lowest CV error data frame
-  ancestry_dat <- cbind(sample_names_fam[,2], ancestry_proportion_list[[K]])
+  ancestry_dat <- cbind(sample_names_fam[,2], ancestry_proportion_list[[list_element]])
   
   # change column names to vector of sample name and various K populations
   colnames(ancestry_dat) <- c("vcf_sample_name", paste0("pop", c(1:K)))
