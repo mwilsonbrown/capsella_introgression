@@ -107,9 +107,9 @@ ancestry_location <- function(ancestry_data, whole_genome_sequencing){
 }
 
 ## Assign majority ancestry group
-assign_ancestry <- function(ancestry_proportion_list, K, sample_names_fam){
+assign_ancestry <- function(ancestry_proportion_list, K, list_element = K, sample_names_fam){
   # select population proportion columns
-  props <- ancestry_proportion_list[[K]]
+  props <- ancestry_proportion_list[[list_element]]
   
   # for each row (apply,1) select the column name in which the maximum value (of ancestry proportion) is found; replace the column indicator 'V' with 'pop'
   group <- str_replace(colnames(props)[apply(props,1, which.max)], "V", "pop")

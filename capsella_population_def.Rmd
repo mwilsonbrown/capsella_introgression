@@ -314,13 +314,14 @@ K = 4 just out of curiosity
 
 ```{r}
 # data for k = 4 on European group data
-ea_k4 <- ancestry_bars(ea_ancestry_propsK, K = 4, sample_names_fam = ea_fam)
+ea_k4 <- ancestry_bars(ea_ancestry_propsK, K = 4, sample_names_fam = ea_fam, ggplot_opt = scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482")))
 
 # make just the plot show up
 plot(ea_k4)
 
 #ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
+We only know where one of the seemingly admixed genotypes above is from; STJ2 was collected near a canal on La Teste-de-Bush in the south of France.
 
 setting up for plotting on a map
 ```{r}
@@ -336,7 +337,7 @@ ea_k4 <- left_join(ea_k4_anc_info, k4_key)
 
 ```{r}
 # world map
-world + geom_point(data=ea_k4, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21)
+world + geom_point(data=ea_k4, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) + scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
 
 #ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
@@ -425,6 +426,33 @@ nyc_k2 <- left_join(nyc_k2$data, ny_k2_key)
 ny_map + geom_point(data=subset(nyc_k2, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21) + scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "orange"))
 ```
 
+Now when looking at K = 4...
+
+```{r}
+# ancestry bar plots
+nyc_k4 <- ancestry_bars(nyc_ancestry_propsK, K = 4, list_element = 2, nyc_fam, ggplot_opt = scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482")))
+
+# plot
+plot(nyc_k4)
+```
+
+```{r}
+# add location information, even though the NYC samples have them
+# make new column with the trailing S[number] removed from Panko samples
+nyc_k4$data$sample_name <- str_remove_all(nyc_k4$data$vcf_sample_name, "_S[0-9]+")
+
+# combine the sample info with ancestry
+nyc_k4$data <- left_join(nyc_k4$data, wgs)
+
+# get sample to majority ancestry population key
+ny_k4_key <- assign_ancestry(nyc_ancestry_propsK, K=4, list_element = 2, nyc_fam)
+
+# join key to location information
+nyc_k4 <- left_join(nyc_k4$data, ny_k4_key)
+
+# map
+ny_map + geom_point(data=subset(nyc_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21) + scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+```
 
 ###### Comparing summary tools
 Pong, CLUMMP, ConSTRUCT,
