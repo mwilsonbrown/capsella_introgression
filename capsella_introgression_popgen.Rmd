@@ -1,0 +1,347 @@
+---
+title: "Capsella local ancestry introgression and PopGen"
+author: "Maya Wilson Brown"
+date: "2024-03-25"
+output: html_document
+---
+
+##### Setup 
+```{r libraries}
+library(stringr)
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r sourcing functions}
+source("~/Documents/PhD/Research/capsella_introgression/capsella_pop_introgressin_functions.R")
+```
+
+# Introgression in Capsella bursa-pastoris
+```{r ancestry colors}
+# another option for pink color is #C5839A; I was using "pink" before (FFC0CB), #E2A2B3, or just 'mistyrose'
+anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#96938E")
+
+# a warm gray or green grey need to be quite dark for it to be appropriate for all forms of colorblindness
+```
+
+```{r directory variables}
+# ancestry hmm viterbi decoded output path
+ahmm_vit_path = "~/Documents/PhD/Research/ahmm_local_inference/ahmm_viterbi/"
+```
+
+
+```{r capsella sequenced information}
+wgs <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_combined_wgs.txt", sep = "\t", header = T)
+```
+
+
+# Viterbi decoding of ancestry
+
+```{r load viterbi files}
+# list all files with matching pattern
+tbl <- list.files(path = ahmm_vit_path, pattern = "*.viterbi") 
+
+vit <- list()  # Create an empty list to store the data
+
+#loop to load sample data
+for (file in tbl) {
+  file_path <- file.path(ahmm_vit_path, file)  # Get the full file path
+  vit[[file]] <- read.delim(file_path, header = F, col.names = c("chrom", "start", "end", "V4", "V5", "anc_state"))  # Read the file and store in the list
+}                                
+
+#change list element names
+names(vit) <- str_replace_all(names(vit), "[.]viterbi", "") #remove file suffix from name
+#names(vit) <- str_replace_all(names(vit), "_S[0-9]+", "") #remove S number from NYC samples
+```
+
+
+```{r reformat viterbi list}
+# add factors for ancestral state and add tract-length column
+vit_out <- lapply(vit, function(x) {data.frame(x) %>% mutate(ancestry = ifelse(anc_state == "2,0",
+                  "rubella", 
+                  ifelse(anc_state == "0,2",
+                         "bursa_pastoris",
+                         "heterozygous")), #assign ancestry
+                  tract_length = end-start)}
+                  ) # calculate tract lengths
+```
+
+```{r}
+# concatenate the data tables for all the samples making a new column identifying the sample
+vit_all <- data.table::rbindlist(vit_out, idcol = "vcf_sample_name")
+
+# order sample names to be in ancestry proportion order
+#lvl.order <- c(anc[1:nrow(sample_names_fam), "vcf_sample_name"])$vcf_sample_name
+
+# explicitly make 'vcf_sample_name' a factor and order by ancestry proportion
+#vit_all$vcf_sample_name <- factor(vit_all$vcf_sample_name, levels = lvl.order)
+```
+
+I will start by combinging the viterbi decoding with the whole genome sequencing data
+```{r}
+# make new column with the trailing S[number] removed from Panko samples
+vit_all$sample_name <- str_remove_all(vit_all$vcf_sample_name, "_S[0-9]+")
+
+# combine the sample info with viterbi decoding
+vit_all <- left_join(vit_all, wgs)
+```
+
+NYC only introgression plot
+```{r nyc_introgression_plot}
+ggplot() + geom_segment(data = subset(vit_all, (chrom == "SCF_16" & (state == "NY" | state == "NJ"))), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 16") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+
+#ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/ny_viterbi_SCF16.png", units = "in", height = 7, width = 12)
+```
+
+
+```{r nyc_introgression_plot_allScaffolds}
+ggplot() + geom_segment(data = subset(vit_all, (state == "NY" | state == "NJ")), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) +
+  scale_color_manual(values=anc.cols) + 
+  ggtitle("New York introgression patterns") + 
+  ylab("position") + xlab("Sample Name") + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 8)) +
+   facet_wrap(~chrom, scales = "free_y")
+
+ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/ny_viterbi_all.png", units = "in", height = 12, width = 19)
+```
+
+###### Introgression .bed files
+To use this tool, I need a bed file of introgressed regions for each sample separately.
+
+Starting with the NYC samples
+It may be possible to make a co-occurrence matrix with the bed output files.
+
+```{r}
+# select rubella tracts
+ny_rubella_tracts <- vit_all[vit_all$ancestry == "rubella" & (vit_all$state == "NY" | vit_all$state == "NJ"),]
+```
+
+```{r prep data to be turned into bed file}
+# select only useful columns
+temp <- ny_rubella_tracts[,c("vcf_sample_name","chrom","start","end")]
+
+# break up data frame by sample
+ny_rub_by_sample <- split(temp, temp$vcf_sample_name)
+
+# drop the sample id column from all
+ny_rub_by_sample <- lapply(ny_rub_by_sample, function(x){
+  x[,-"vcf_sample_name"]
+})
+```
+
+save each to a separate .bed file
+```{r, eval=FALSE}
+# for(i in 1:length(ny_rub_by_sample)){
+#   write.table(ny_rub_by_sample[[i]], paste0(names(ny_rub_by_sample)[i], "ny_rubella_chunks.bed"), col.names = F, quote = F, row.names = F, sep = "\t")
+# }
+```
+
+Now do the same for Mediterranean samples.
+
+```{r mediterranenan samples, eval=FALSE}
+# select rubella tracts
+med_rubella_tracts <- vit_all[vit_all$ancestry == "rubella" & vit_all$vcf_sample_name %in% c("39-12-28","70.5","AL87","JO56","JO59","TR73","WAC5"),] #should be some other identifier
+
+# select only useful columns
+temp <- med_rubella_tracts[,c("vcf_sample_name","chrom","start","end")]
+
+# break up data frame by sample
+med_rub_by_sample <- split(temp, temp$vcf_sample_name)
+
+# drop the sample id column from all
+med_rub_by_sample <- lapply(med_rub_by_sample, function(x){
+  x[,-"vcf_sample_name"]
+})
+
+# for(i in 1:length(med_rub_by_sample)){
+#   write.table(med_rub_by_sample[[i]], paste0(names(med_rub_by_sample)[i], "med_rubella_chunks.bed"), col.names = F, quote = F, row.names = F, sep = "\t")
+# }
+```
+
+### Commonly introgressed regions
+
+This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and *multi-inter* from BEDTools
+```{r}
+# load file
+nyc_inter <- read.delim("~/Documents/PhD/Research/admixture/old/nyc_multiinter_rubella.txt")
+
+# smaller working file since BEDTools outputs more information than I need
+nyc_inter_sm <- nyc_inter[,1:4]
+```
+
+```{r NY Crubella chunks gradient}
+# mistyrose = #FFE4E1, violetred4 = #8B2252
+# gradient plot where darker colors mean more individuals share an introgressed chunk
+ggplot() + geom_segment(data = nyc_inter_sm, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
+
+#ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/ny_introgressed_freq.png", units = "in", height = 12, width = 12)
+```
+
+Let's look at the distributions of individuals that share chunks for each scaffold to get a better idea of how common is common for each scaffold.
+```{r}
+ggplot() + geom_histogram(data = nyc_inter_sm, binwidth = 1, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
+  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
+```
+ 
+I will define an introgressed segment as common if it is present in at least 33 individuals (a little over 50% of our NYC samples)
+
+```{r}
+# get the common chunks
+nyc_common_chunks <- nyc_inter_sm[nyc_inter_sm$num >= 33,]
+```
+
+
+```{r join common with nyc data}
+#prepping to join with larger dataset
+nyc_common_chunks$vcf_sample_name <- "common"
+nyc_common_chunks$ancestry <- "rubella"
+
+ny_rubella_common <- rbind(ny_rubella_tracts, nyc_common_chunks, fill=T)
+```
+
+```{r nyc and common rubella chunks}
+ggplot() + geom_segment(data = subset(ny_rubella_common, chrom == "SCF_9"), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 9: New York") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+
+# Looks quite good actually!
+```
+
+
+```{r nyc and common rubella chunks all}
+ggplot() + geom_segment(data = ny_rubella_common, aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("New York introgrressed regions shared by 33 or more individuals") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10)) +
+  facet_wrap(~chrom, scales = "free_y")
+
+#ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/ny_introgressed_common.png", units = "in", height = 12, width = 19)
+```
+
+#### Co-occurrences?
+I want to try to do some kind of co-occurance matrix analysis to see how often introgressed regions are co-occurring with other regions
+```{r}
+# to get the binary matrix 
+nyc_inter_bmat <- nyc_inter[,6:length(colnames(nyc_inter))]
+
+
+
+# re-list data by scaffold
+nyc_inter_ls <- split(nyc_inter, f = nyc_inter$chrom)
+```
+
+
+Now again with the Mediterranean samples
+```{r mediterranean, eval=FALSE}
+# load file
+med_inter <- read.delim("~/Documents/PhD/Research/admixture/old/med_rubella_chunks/med_multiinter_rubella.txt")
+
+# smaller working file since BEDTools outputs more information than I need
+med_inter <- med_inter[,1:4]
+
+# gradient plot where darker colors mean more individuals share an introgressed chunk
+ggplot() + geom_segment(data = med_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("Mediterranean introgressed regions") + theme_classic()
+
+ggplot() + geom_histogram(data = med_inter, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
+  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
+
+# get the common chunks
+med_common_chunks <- med_inter[med_inter$num >= 4,]
+
+#prepping to join with larger dataset
+med_common_chunks$vcf_sample_name <- "common"
+med_common_chunks$ancestry <- "rubella"
+
+med_rubella_common <- rbind(med_rubella_tracts, med_common_chunks, fill=T)
+
+ggplot() + geom_segment(data = subset(med_rubella_common, chrom == "SCF_9"), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 9: Mediterranean") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+```
+
+
+#### Genic Content
+We may be interested in comparing the number of genes in introgressed regions vs non-introgressed regions. To do this, we can use BEDTools intersect to see how many basepairs of genes from a Genome Feature File (GFF) intersect with basepairs from introgressed or non-introgressed regions.
+
+I will create BEDfiles of non-intorgressed regions as before.
+
+#### PI in introgressed regions
+To look at pairwise diversity in introgressed regions, first, I assigned individual Capsella bursa-pastoris to different populations where individuals are a part of 3 main lineages: Asian, with no introgression; Mediterranean, with introgression; and European/NewYorker, with introgression.
+
+First, I looked at pairwise diversity in each population using sliding windows of 10,000 base pairs across the whole genome.
+
+```{r whole genome pi, eval = FALSE}
+### With the newly generated VCF
+pi_v1 <- read.delim("~/Documents/PhD/Research/capsella_introgression_git_temp/windows_v1_pi.txt")
+
+#plot
+pi_v1 %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  facet_wrap(~pop) +
+  ggtitle("Pi across whole genome") +
+  theme_bw()
+```
+
+Now for the nyc and mediterranean introgressed regions on their own.
+```{r}
+### With the newly generated VCF
+pi_nyc <- read.delim("~/Documents/PhD/Research/capsella_introgression_git_temp/nyc_int_v1_pi.txt")
+
+#plot
+pi_nyc %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  facet_wrap(~pop) +
+  ggtitle("Pi in NYC introgressed regions only")
+  
+```
+An interesting comparison here might be between NYC samples and other (northern) European cluster samples.
+
+```{r}
+### With the newly generated VCF
+pi_med <- read.delim("~/Documents/PhD/Research/capsella_introgression_git_temp/med_int_v1_pi.txt")
+
+#plot
+pi_med %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  facet_wrap(~pop) +
+  ggtitle("Pi in Mediterranean introgressed regions only")
+```
+Not sure that this means yet, but my first thoughts are that for commonly introgressed regions in the mediterranean
+
+#### SIDEBAR
+I wonder if we zoom in on Pi in NYC for introgressed regions that are present in all 65 individuals.
+```{r eval=FALSE}
+# select regions present in all individiuals
+nyc_retained_chunks <- nyc_inter[nyc_inter$num == 65,]
+
+# save whole genome data as ggplot
+wg_nyc_pi <- pi_v1[pi_v1$pop == "p2_nyc",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi))+
+  geom_line()
+
+# plot only those regions?
+pi_nyc[pi_nyc$pop == "p2_nyc",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  ggtitle("Pi in NYC introgressed regions only")
+
+# plot only those regions?
+int_r_nyc_pi <- pi_nyc[pi_nyc$pop == "p2_nyc",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  facet_wrap(~chromosome)
+  ggtitle("Pi in NYC introgressed regions shared by >=33 genotypes")
+```
+
+Another analysis that may be interesting is to look at PI (pairwise diversity) along the genome within NYC populations to identify regions with higher or lower PI than expected?
+
+But first, I am interested in Dxy comparing NYC regions to other.
+
+The first thing I need to do is create a mapping list for Pixy defined populations for comparison.
+
+The main question here might be how extremely differentiated sites compare to genomic regions of interest (either introgressed or not)
+
+Might want to compare the levels between the Northern European population and the Southern European population, compared to NYC and California when I get that data. 
