@@ -282,7 +282,7 @@ ea_k2 <- ancestry_bars(ea_ancestry_propsK, K = K, sample_names_fam = ea_fam, ggp
 # make just the plot show up
 plot(ea_k2)
 
-#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
 
 Same information largely, but on a map (just to confirm my suspicions).
@@ -302,7 +302,7 @@ ea_k2 <- left_join(ea_k2_anc_info, k2_key)
 world + geom_point(data=ea_k2, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) +
   scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "orange"))
 
-#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
 Suspicions confirmed: there are two main populations in the ancestral range; one is in southern and eastern Asia, while the other is mostly in Europe and northwestern China with some overlap.
 
@@ -319,7 +319,7 @@ ea_k4 <- ancestry_bars(ea_ancestry_propsK, K = 4, sample_names_fam = ea_fam, ggp
 # make just the plot show up
 plot(ea_k4)
 
-#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k4.png", width = 13, height = 7, units = "in")
 ```
 We only know where one of the seemingly admixed genotypes above is from; STJ2 was collected near a canal on La Teste-de-Bush in the south of France.
 
@@ -339,7 +339,7 @@ ea_k4 <- left_join(ea_k4_anc_info, k4_key)
 # world map
 world + geom_point(data=ea_k4, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) + scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
 
-#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k4_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
 Now we see the Mediterranean cluster sort of break off into two other population chunks.
 
@@ -402,6 +402,9 @@ nyc_k2 <- ancestry_bars(nyc_ancestry_propsK, K = 2, list_element = 1, nyc_fam, g
 
 # plot
 plot(nyc_k2)
+
+# save
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
 AAAANNNNNDDD on the map of New York and New Jersey
 ```{r}
@@ -420,6 +423,8 @@ nyc_k2 <- left_join(nyc_k2$data, ny_k2_key)
 
 # map
 ny_map + geom_point(data=subset(nyc_k2, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21) + scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "orange"))
+
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k2_nyc_map.png", width = 13, height = 7, units = "in")
 ```
 
 Now when looking at K = 4...
@@ -430,6 +435,8 @@ nyc_k4 <- ancestry_bars(nyc_ancestry_propsK, K = 4, list_element = 2, nyc_fam, g
 
 # plot
 plot(nyc_k4)
+
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k4.png", width = 13, height = 7, units = "in")
 ```
 
 ```{r}
@@ -448,6 +455,8 @@ nyc_k4 <- left_join(nyc_k4$data, ny_k4_key)
 
 # map
 ny_map + geom_point(data=subset(nyc_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21) + scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+
+ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k4_nyc_map.png", width = 13, height = 7, units = "in")
 ```
 
 At this point, it makes sense to generate a key for generalized population structure to use in other analyses.
@@ -474,8 +483,14 @@ K4_cond_key <- K4_cond_key %>%
 
 # combine both K =2 and K =4 into single data set; leaving out the anc_group column
 cbp_pops <- left_join(K2_cond_key[,-2], K4_cond_key[,-2], )
+
+# ALT: For separating out NYC; row 60 and below are nyc
+#copy column to new column
+cbp_pops$nyc2k4 <- cbp_pops$k4_group
+#change NYC samples to be NYC
+cbp_pops$nyc2k4[60:nrow(cbp_pops)] <- "nyc"
 ```
 Now I will write the data population data to file
-```{r save cbp population file}
+```{r save cbp population file, eval=FALSE}
 write.table(cbp_pops, file = "~/Documents/PhD/Research/capsella_introgression/pixy_pop_march26_2024.txt", col.names = F, row.names = F, quote = F, sep = "\t")
 ```

@@ -344,4 +344,61 @@ The first thing I need to do is create a mapping list for Pixy defined populatio
 
 The main question here might be how extremely differentiated sites compare to genomic regions of interest (either introgressed or not)
 
-Might want to compare the levels between the Northern European population and the Southern European population, compared to NYC and California when I get that data. 
+Might want to compare the levels between the Northern European population and the Southern European population, compared to NYC and California when I get that data.
+
+```{r}
+pi <- read.delim("~/Documents/PhD/Research/capsella_introgression/nyc_eurasia_k4_pi.txt")
+```
+
+```{r}
+pi %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
+  geom_line() +
+  facet_wrap(~pop) +
+  ggtitle("Pi across whole genome") +
+  theme_bw()
+```
+
+
+```{r}
+dxy <- read.delim("~/Documents/PhD/Research/capsella_introgression/nyc_eurasia_k4_dxy.txt")
+```
+
+```{r}
+dxy %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_dxy, color = chromosome))+
+  geom_line() +
+  facet_grid(pop1~pop2) +
+  ggtitle("Dxy across whole genome") +
+  theme_bw()
+```
+```{r}
+dxy[dxy$chromosome == "SCF_10",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_dxy, color = chromosome))+
+  geom_line() +
+  facet_grid(pop1~pop2) +
+  ggtitle("Dxy across whole genome") +
+  theme_bw()
+```
+```{r}
+fst <- read.delim("~/Documents/PhD/Research/capsella_introgression/nyc_eurasia_k4_fst.txt")
+```
+
+```{r}
+fst[fst$chromosome == "SCF_10",] %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = avg_wc_fst, color = chromosome))+
+  geom_line() +
+  facet_grid(pop1~pop2) +
+  ggtitle("Fst across whole genome") +
+  theme_bw()
+```
+
+Pixy Plot
+```{r}
+
+```
+
