@@ -74,7 +74,7 @@ cap_k3 <- ancestry_bars(cap_ancestry_propsK, K = K, cap_fam, scale_fill_manual(v
 # plot
 cap_k3
 # save image
-ggsave("./plots_temp/cbp_k3.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/cbp_k3.png", width = 13, height = 7, units = "in")
 ```
 
 
@@ -107,7 +107,7 @@ Clusters on a map
 world + geom_point(data=cap_k3, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) +
   scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "#E64B35FF", "pop3" = "orchid1"))
 
-ggsave("./plots_temp/cbp_k3_map.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/cbp_k3_map.png", width = 13, height = 7, units = "in")
 ```
 
 # European Only admixture
@@ -148,7 +148,7 @@ eu_k2 <- ancestry_bars(eu_ancestry_propsK, K = K, sample_names_fam = eu_fam)
 plot(eu_k2)
 
 # save plot
-ggsave("./plots_temp/eu_cbp_k2.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/eu_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
 
 
@@ -191,12 +191,12 @@ REMEBER WHEN PLOTTING, THE POPULATIONS DO NOT MATCH BETWEEN Ks!!!!! IT'S AN ARBI
 ```{r}
 ny_map + geom_point(data=subset(eu_k2, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21)
 
-ggsave("./plots_temp/eu_cbp_k2_ny_map.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/eu_cbp_k2_ny_map.png", width = 13, height = 7, units = "in")
 ```
 ```{r}
 eurasia + geom_point(data=subset(eu_k2, citation != "R. Panko"), aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21)
 
-ggsave("./plots_temp/eu_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/eu_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
 
 Get data for K=4 and plot on maps
@@ -207,7 +207,7 @@ eu_k4 <- ancestry_bars(eu_ancestry_propsK, K = 4, sample_names_fam = eu_fam, ggp
 # make just the plot show up
 plot(eu_k4)
 
-ggsave("./plots_temp/eu_cbp_k4.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/eu_cbp_k4.png", width = 13, height = 7, units = "in")
 ```
 
 
@@ -227,7 +227,7 @@ eu_k4 <- left_join(eu_k4_anc_info, k4_key)
 ny_map + geom_point(data=subset(eu_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape=21, stroke = 2) +
   scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
 
-ggsave("./plots_temp/eu_cbp_k4_ny_map.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/eu_cbp_k4_ny_map.png", width = 13, height = 7, units = "in")
 ```
 
 ```{r}
@@ -235,7 +235,7 @@ ggsave("./plots_temp/eu_cbp_k4_ny_map.png", width = 13, height = 7, units = "in"
 eurasia + geom_point(data=subset(eu_k4, citation != "R. Panko"), aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) +
   scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
 
-ggsave("./plots_temp/eu_cbp_k4_eurasia_map.png", width = 13, height = 7, units = "in")
+#ggsave("./plots_temp/eu_cbp_k4_eurasia_map.png", width = 13, height = 7, units = "in")
 ```
 From the above plots, we can see that population 4 when k=4 is a population "unique" to New York.
 
@@ -282,7 +282,7 @@ ea_k2 <- ancestry_bars(ea_ancestry_propsK, K = K, sample_names_fam = ea_fam, ggp
 # make just the plot show up
 plot(ea_k2)
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
 
 Same information largely, but on a map (just to confirm my suspicions).
@@ -299,10 +299,10 @@ ea_k2 <- left_join(ea_k2_anc_info, k2_key)
 
 ```{r}
 # world map
-world + geom_point(data=ea_k2, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) +
-  scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "orange"))
+eurasia + geom_point(data=ea_k2, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21, size = 7) +
+  scale_fill_manual(name = "Group", values = c("pop1" = "#4DBBD5FF", "pop2" = "orange"), labels = c("East Asian", "European"))
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k2_eurasia_map_bigDots.png", width = 13, height = 7, units = "in")
 ```
 Suspicions confirmed: there are two main populations in the ancestral range; one is in southern and eastern Asia, while the other is mostly in Europe and northwestern China with some overlap.
 
@@ -314,12 +314,12 @@ K = 4 just out of curiosity
 
 ```{r}
 # data for k = 4 on European group data
-ea_k4 <- ancestry_bars(ea_ancestry_propsK, K = 4, sample_names_fam = ea_fam, ggplot_opt = scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482")))
+ea_k4 <- ancestry_bars(ea_ancestry_propsK, K = 4, sample_names_fam = ea_fam, ggplot_opt = scale_fill_manual(values = c("pop3" = "#2B3A67", "pop2" = "#84A98C", "pop1" = "#DA2C38", "pop4" = "#FFC482")))
 
 # make just the plot show up
 plot(ea_k4)
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k4.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k4.png", width = 13, height = 7, units = "in")
 ```
 We only know where one of the seemingly admixed genotypes above is from; STJ2 was collected near a canal on La Teste-de-Bush in the south of France.
 
@@ -337,9 +337,9 @@ ea_k4 <- left_join(ea_k4_anc_info, k4_key)
 
 ```{r}
 # world map
-world + geom_point(data=ea_k4, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21) + scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+eurasia + geom_point(data=ea_k4, aes(x=longitude, y=latitude, fill = anc_group, color = NULL), shape=21, size = 7) + scale_fill_manual(name = "Group", values = c("pop3" = "#2B3A67", "pop2" = "#84A98C", "pop1" = "#DA2C38", "pop4" = "#FFC482"), labels = c("Mediterranean", "N. European","East Asian", "Central"))
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k4_eurasia_map.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/eurasian_cbp_k4_eurasia_map_bigDots.png", width = 13, height = 7, units = "in")
 ```
 Now we see the Mediterranean cluster sort of break off into two other population chunks.
 
@@ -404,7 +404,7 @@ nyc_k2 <- ancestry_bars(nyc_ancestry_propsK, K = 2, list_element = 1, nyc_fam, g
 plot(nyc_k2)
 
 # save
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k2.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k2.png", width = 13, height = 7, units = "in")
 ```
 AAAANNNNNDDD on the map of New York and New Jersey
 ```{r}
@@ -422,21 +422,21 @@ ny_k2_key <- assign_ancestry(nyc_ancestry_propsK, K=2, list_element = 1, nyc_fam
 nyc_k2 <- left_join(nyc_k2$data, ny_k2_key)
 
 # map
-ny_map + geom_point(data=subset(nyc_k2, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21) + scale_fill_manual(values = c("pop1" = "#4DBBD5FF", "pop2" = "orange"))
+ny_map + geom_point(data=subset(nyc_k2, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21, size = 7) + scale_fill_manual(name = "Group", values = c("pop1" = "#4DBBD5FF", "pop2" = "orange"), labels = c("European"))
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k2_nyc_map.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k2_nyc_map_bigDots.png", width = 13, height = 7, units = "in")
 ```
 
 Now when looking at K = 4...
 
 ```{r}
 # ancestry bar plots
-nyc_k4 <- ancestry_bars(nyc_ancestry_propsK, K = 4, list_element = 2, nyc_fam, ggplot_opt = scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482")))
+nyc_k4 <- ancestry_bars(nyc_ancestry_propsK, K = 4, list_element = 2, nyc_fam, ggplot_opt = scale_fill_manual(values = c("pop3" = "#2B3A67", "pop2" = "#84A98C", "pop1" = "#DA2C38", "pop4" = "#FFC482")))
 
 # plot
 plot(nyc_k4)
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k4.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k4.png", width = 13, height = 7, units = "in")
 ```
 
 ```{r}
@@ -454,9 +454,9 @@ ny_k4_key <- assign_ancestry(nyc_ancestry_propsK, K=4, list_element = 2, nyc_fam
 nyc_k4 <- left_join(nyc_k4$data, ny_k4_key)
 
 # map
-ny_map + geom_point(data=subset(nyc_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21) + scale_fill_manual(values = c("pop1" = "#2B3A67", "pop2" = "#84A98C", "pop3" = "#DA2C38", "pop4" = "#FFC482"))
+ny_map + geom_point(data=subset(nyc_k4, state == c("NY", "NJ")), aes(x=longitude, y=latitude, fill = anc_group), shape = 21, size = 7) + scale_fill_manual(name = "Group", values = c("pop3" = "#2B3A67", "pop2" = "#84A98C", "pop1" = "#DA2C38", "pop4" = "#FFC482"), labels = c("N. European"))
 
-ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k4_nyc_map.png", width = 13, height = 7, units = "in")
+#ggsave("~/Documents/PhD/Research/admixture/plots_temp/nyc_cbp_k4_nyc_map_bigDots.png", width = 13, height = 7, units = "in")
 ```
 
 At this point, it makes sense to generate a key for generalized population structure to use in other analyses.

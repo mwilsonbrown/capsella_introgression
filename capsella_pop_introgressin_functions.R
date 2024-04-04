@@ -17,7 +17,7 @@ ny_map <- ggplot()+ geom_sf(data= states, fill="gray93")+
 
 # map of eurasia
 eurasia <- ggplot()+ geom_sf(data= east, fill="gray93")+ 
-  coord_sf(xlim = c(-30, 179.9),  ylim = c(30, 80.9), expand = FALSE) + 
+  coord_sf(xlim = c(-30, 150.9),  ylim = c(22, 75), expand = FALSE) + 
   theme_light() + 
   theme(axis.text.x= element_text(size = 5), axis.text.y= element_text(size = 5))
 # map of the world
