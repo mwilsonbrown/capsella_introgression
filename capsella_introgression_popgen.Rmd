@@ -283,6 +283,8 @@ ny_indx <- which(grepl( "ny", eu_names, fixed = TRUE))
 neu_indx <- which(grepl( "ne", eu_names, fixed = TRUE))
 cen_indx <- which(grepl( "cen", eu_names, fixed = TRUE))
 med_indx <- which(grepl( "med", eu_names, fixed = TRUE))
+
+# checking these are true
 ```
 
 Now I would like to determine a series of tests
@@ -301,11 +303,91 @@ ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom
 ```
 ```{r}
 # determining regions private to each group
-ny_only <- sm_eu_inter[sm_eu_inter$list %in% ny_indx]
-# only in NYC
-ggplot() + geom_segment(data = subset(sm_eu_inter, list %in% ny_indx), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions across all European lineage") + theme_classic()
-```
+t <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if all 65 nyc inds are contained
+sum(nel %in% ny_indx) == 65
+})
 
+med_private <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+setequal(nel, med_indx)
+})
+
+# only in Mediterranean group
+ggplot() + geom_segment(data = sm_eu_inter[which(med_private),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions private to Mediterranean") + theme_classic()
+```
+No regions found to be private to Northern European group, or NYC
+
+```{r}
+cen_private <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+setequal(nel, cen_indx)
+})
+
+# only in Mediterranean group
+ggplot() + geom_segment(data = sm_eu_inter[which(cen_private),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions private to Central Asia") + theme_classic()
+```
+So now we know that only the mediterranean region and central asia have introgressed regions that are private to those populations. It may now be interestigng to find regions that are shared only between nyc and those other two populations.
+```{r}
+# are there any in NYC and Central Asia only?
+cen_ny <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+setequal(nel, c(ny_indx,cen_indx))
+})
+
+sum(cen_ny)
+
+# are there any in NYC and mediterranean only?
+med_ny <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+setequal(nel, c(ny_indx,med_indx))
+})
+
+sum(med_ny)
+```
+No!
+
+I think from this, we can conclude that alleles shared across European populations are not due to shared introgression
 #### Genic Content
 We may be interested in comparing the number of genes in introgressed regions vs non-introgressed regions. To do this, we can use BEDTools intersect to see how many basepairs of genes from a Genome Feature File (GFF) intersect with basepairs from introgressed or non-introgressed regions.
 
