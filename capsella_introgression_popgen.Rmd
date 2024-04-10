@@ -291,31 +291,41 @@ Now I would like to determine a series of tests
 ```{r}
 # plot rubella regions common to all in European cluster
 # num column should be 91
-ggplot() + geom_segment(data = subset(sm_eu_inter, num == 91), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions in all European lineage") + theme_classic()
+ggplot() + geom_segment(data = subset(sm_eu_inter, num == 91), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions in all European lineage") + theme_classic()
 
+ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_v.png", units = "in", height = 12, width = 12)
+
+all_eu <- sm_eu_inter[sm_eu_inter$num == 91,] %>% mutate(chunk_size = end-start)
+
+#ggplot() + geom_histogram(data= all_eu, aes(x=chunk_size), binwidth = 1) +
+  geom_vline(xintercept = mean(all_eu$chunk_size)) +
+               theme_bw()
+
+```
+What is the distribution of shared regions
+```{r}
+ggplot() + geom_histogram(data=sm_eu_inter, aes(x=num), binwidth = 1) + theme_bw()
 ```
 
 ```{r}
 # plot rubella regions common to all in European cluster
 # num column should be 91
-ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions across all European lineage") + theme_classic()
+ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions across all European lineage") + theme_classic()
+
+ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_freq_v.png", units = "in", height = 12, width = 12)
 
 ```
-```{r}
-# determining regions private to each group
-t <- apply(sm_eu_inter["list"], 1, function(x){
-# for each row
-# take the value of column 'list'
-# make it a vector
-v <- c(x)
-# split elements into characters
-el <- str_split_1(v, ",")
-# make the character vector numeric
-nel <- as.numeric(el)
-# check if all 65 nyc inds are contained
-sum(nel %in% ny_indx) == 65
-})
 
+Want to combine the "everybody" image with frequency image
+```{r}
+# does not work yet
+ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") +
+  geom_segment(data = all_eu, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + 
+  scale_color_continuous(high ="green", low = "black")+ ggtitle("introgressed regions across all European lineage") + theme_classic()
+```
+
+```{r}
+# determining regions private to each group, but also found in all members
 med_private <- apply(sm_eu_inter["list"], 1, function(x){
 # for each row
 # take the value of column 'list'
@@ -329,12 +339,141 @@ nel <- as.numeric(el)
 setequal(nel, med_indx)
 })
 
-# only in Mediterranean group
-ggplot() + geom_segment(data = sm_eu_inter[which(med_private),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions private to Mediterranean") + theme_classic()
+sum(med_private)
 ```
-No regions found to be private to Northern European group, or NYC
+To get the number of those that are private but not present in all members of the group, I can use is.element?
+```{r}
+# only in Mediterranean group
+ggplot() + geom_segment(data = sm_eu_inter[which(med_private),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions private to Mediterranean group") + theme_classic()
+
+ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/Med_private_introgressed.png", units = "in", height = 12, width = 12)
+```
+No regions found to be private to Northern European group, or NYC and present in all members of the group.
+
+To get the number of those that are private but not present in all members of the group, I can use is.element? or interset?
+```{r}
+# private to mediterranean but not in all samples of the group
+med_p_div <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the all elements are within test vector
+all(nel %in% med_indx)
+})
+
+sum(med_p_div)
+```
+Okay so 64 regions are *only* in Mediterranean but *not all the individuals* have them.
+
+We know NYC does not have private and common regions, but what about just private?
 
 ```{r}
+# private to New York/New Jersey but not in all samples of the group
+ny_p_div <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the all elements are within test vector
+all(nel %in% ny_indx)
+})
+
+sum(ny_p_div)
+```
+46!
+
+Let's try to make a figure for that.
+```{r}
+ggplot() + 
+  geom_segment(data = sm_eu_inter[which(ny_p_div),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + 
+  ggtitle("Introgressed regions private to New York") + theme_classic()
+
+ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/Nyc_private_notAll_introgressed_v.png", units = "in", height = 12, width = 12)
+```
+```{r}
+# maximum number of individuals that share a private region?
+max(sm_eu_inter[which(ny_p_div), "num"])
+```
+
+Now I can compare NYC to other regions. Here I am attempting to find regions that are only in New York and other groups, but may not be present in all individuals
+```{r}
+# private to New York/New Jersey but not in all samples of the group
+ny_neu_p <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the all elements are within test vector
+all(nel %in% c(ny_indx, neu_indx))
+})
+
+# how many?
+sum(ny_neu_p)
+
+# distribution of sharing
+ggplot() + geom_histogram(data = sm_eu_inter[which(ny_neu_p),], aes(x=num), binwidth = 1)
+
+# size of chunks generally
+ny_neu_df <- sm_eu_inter[which(ny_neu_p),] %>% mutate(chunk_size = end - start)
+
+#plot
+ggplot() + geom_histogram(data = subset(ny_neu_df, num > 2), aes(x=chunk_size))
+
+```
+
+```{r}
+#chromosome plot
+ggplot() + 
+  geom_segment(data = sm_eu_inter[which(ny_neu_p),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + 
+  ggtitle("Introgressed regions only in NYC and N. Eruope") + theme_classic()
+```
+How about Mediterranean
+```{r}
+# private to New York/New Jersey but not in all samples of the group
+ny_med_p <- apply(sm_eu_inter["list"], 1, function(x){
+# for each row
+# take the value of column 'list'
+# make it a vector
+v <- c(x)
+# split elements into characters
+el <- str_split_1(v, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the all elements are within test vector
+all(nel %in% c(ny_indx, med_indx))
+})
+
+# how many?
+sum(ny_med_p)
+
+# distribution of sharing
+ggplot() + geom_histogram(data = sm_eu_inter[which(ny_med_p),], aes(x=num), binwidth = 1)
+```
+Plot of them
+
+```{r}
+#chromosome plot
+ggplot() + 
+  geom_segment(data = sm_eu_inter[which(ny_med_p),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + 
+  ggtitle("Introgressed regions only in NYC or N. Mediterranean") + theme_classic()
+```
+To make this make more logical sense, I need to find a way to test if the region is in at least one NY individual **and** at least 1 Mediterranean individual.
+
+```{r}
+# private and in all members of central Asian group
 cen_private <- apply(sm_eu_inter["list"], 1, function(x){
 # for each row
 # take the value of column 'list'
@@ -348,9 +487,9 @@ nel <- as.numeric(el)
 setequal(nel, cen_indx)
 })
 
-# only in Mediterranean group
-ggplot() + geom_segment(data = sm_eu_inter[which(cen_private),], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("introgressed regions private to Central Asia") + theme_classic()
+sum(cen_private)
 ```
+
 So now we know that only the mediterranean region and central asia have introgressed regions that are private to those populations. It may now be interestigng to find regions that are shared only between nyc and those other two populations.
 ```{r}
 # are there any in NYC and Central Asia only?
@@ -368,7 +507,9 @@ setequal(nel, c(ny_indx,cen_indx))
 })
 
 sum(cen_ny)
+```
 
+```{r}
 # are there any in NYC and mediterranean only?
 med_ny <- apply(sm_eu_inter["list"], 1, function(x){
 # for each row
@@ -387,7 +528,8 @@ sum(med_ny)
 ```
 No!
 
-I think from this, we can conclude that alleles shared across European populations are not due to shared introgression
+I think from this, we can conclude that alleles shared across all European populations are not due to shared introgression. So the Admixture I find between NYC and Central Asia, and the mediterranean are not due to shared introgressed regions.
+
 #### Genic Content
 We may be interested in comparing the number of genes in introgressed regions vs non-introgressed regions. To do this, we can use BEDTools intersect to see how many basepairs of genes from a Genome Feature File (GFF) intersect with basepairs from introgressed or non-introgressed regions.
 
@@ -398,78 +540,7 @@ To look at pairwise diversity in introgressed regions, first, I assigned individ
 
 First, I looked at pairwise diversity in each population using sliding windows of 10,000 base pairs across the whole genome.
 
-```{r whole genome pi, eval = FALSE}
-### With the newly generated VCF
-pi_v1 <- read.delim("~/Documents/PhD/Research/capsella_introgression_git_temp/windows_v1_pi.txt")
-
-#plot
-pi_v1 %>%
-  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
-  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
-  geom_line() +
-  facet_wrap(~pop) +
-  ggtitle("Pi across whole genome") +
-  theme_bw()
-```
-
-Now for the nyc and mediterranean introgressed regions on their own.
-```{r}
-### With the newly generated VCF
-pi_nyc <- read.delim("~/Documents/PhD/Research/capsella_introgression_git_temp/nyc_int_v1_pi.txt")
-
-#plot
-pi_nyc %>%
-  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
-  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
-  geom_line() +
-  facet_wrap(~pop) +
-  ggtitle("Pi in NYC introgressed regions only")
-  
-```
-An interesting comparison here might be between NYC samples and other (northern) European cluster samples.
-
-```{r}
-### With the newly generated VCF
-pi_med <- read.delim("~/Documents/PhD/Research/capsella_introgression_git_temp/med_int_v1_pi.txt")
-
-#plot
-pi_med %>%
-  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
-  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
-  geom_line() +
-  facet_wrap(~pop) +
-  ggtitle("Pi in Mediterranean introgressed regions only")
-```
-Not sure that this means yet, but my first thoughts are that for commonly introgressed regions in the mediterranean
-
-#### SIDEBAR
-I wonder if we zoom in on Pi in NYC for introgressed regions that are present in all 65 individuals.
-```{r eval=FALSE}
-# select regions present in all individiuals
-nyc_retained_chunks <- nyc_inter[nyc_inter$num == 65,]
-
-# save whole genome data as ggplot
-wg_nyc_pi <- pi_v1[pi_v1$pop == "p2_nyc",] %>%
-  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
-  ggplot(aes(x = chr_position, y = avg_pi))+
-  geom_line()
-
-# plot only those regions?
-pi_nyc[pi_nyc$pop == "p2_nyc",] %>%
-  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
-  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
-  geom_line() +
-  ggtitle("Pi in NYC introgressed regions only")
-
-# plot only those regions?
-int_r_nyc_pi <- pi_nyc[pi_nyc$pop == "p2_nyc",] %>%
-  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
-  ggplot(aes(x = chr_position, y = avg_pi, color = chromosome))+
-  geom_line() +
-  facet_wrap(~chromosome)
-  ggtitle("Pi in NYC introgressed regions shared by >=33 genotypes")
-```
-
+*ANOTHER THOUGHT*
 Another analysis that may be interesting is to look at PI (pairwise diversity) along the genome within NYC populations to identify regions with higher or lower PI than expected?
 
 But first, I am interested in Dxy comparing NYC regions to other.
@@ -508,6 +579,8 @@ dxy %>%
   ggtitle("Dxy across whole genome") +
   theme_bw()
 ```
+
+
 ```{r}
 dxy[dxy$chromosome == "SCF_10",] %>%
   mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
