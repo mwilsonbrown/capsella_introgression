@@ -19,6 +19,8 @@ source("~/Documents/PhD/Research/capsella_introgression/capsella_pop_introgressi
 ```
 
 # Introgression in Capsella bursa-pastoris
+
+#### Data Preparation
 ```{r ancestry colors}
 # another option for pink color is #C5839A; I was using "pink" before (FFC0CB), #E2A2B3, or just 'mistyrose'
 anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#96938E")
@@ -33,6 +35,7 @@ ahmm_vit_path = "~/Documents/PhD/Research/ahmm_local_inference/ahmm_viterbi/"
 
 
 ```{r capsella sequenced information}
+# load capsella whole genome sequencing information
 wgs <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_combined_wgs.txt", sep = "\t", header = T)
 ```
 
@@ -44,12 +47,13 @@ pops <- read.csv("~/Documents/PhD/Research/capsella_introgression/pixy_pop_march
 ```{r wgs and populations}
 # make new column with the trailing S[number] removed from Panko samples
 pops$sample_name <- str_remove_all(pops$V1, "_S[0-9]+")
-# combine pops with wgs data
+# combine population information with wgs data
 wgs2 <- left_join(wgs, pops) #joins by sample_name
 
 # change column names for easier joining with viterbi data later
 colnames(wgs2) <- c(colnames(wgs)[-14], "vcf", "k2_pop", "k4_pop", "k4vsNY_pop")
 
+# drop the "vcf" column
 wgs2 <- select(wgs2, -c("vcf"))
 ```
 
@@ -57,12 +61,12 @@ wgs2 <- select(wgs2, -c("vcf"))
 # Viterbi decoding of ancestry
 
 ```{r load viterbi files}
-# list all files with matching pattern
+# list all files with matching pattern from viterbi output folder
 tbl <- list.files(path = ahmm_vit_path, pattern = "*.viterbi") 
 
 vit <- list()  # Create an empty list to store the data
 
-#loop to load sample data
+#loop to load sample data; each sample gets its own list element df
 for (file in tbl) {
   file_path <- file.path(ahmm_vit_path, file)  # Get the full file path
   vit[[file]] <- read.delim(file_path, header = F, col.names = c("chrom", "start", "end", "V4", "V5", "anc_state"))  # Read the file and store in the list
@@ -76,7 +80,7 @@ names(vit) <- str_replace_all(names(vit), "[.]viterbi", "") #remove file suffix 
 
 ```{r reformat viterbi list}
 # add factors for ancestral state and add tract-length column
-vit_out <- lapply(vit, function(x) {data.frame(x) %>% mutate(ancestry = ifelse(anc_state == "2,0",
+vit <- lapply(vit, function(x) {data.frame(x) %>% mutate(ancestry = ifelse(anc_state == "2,0",
                   "rubella", 
                   ifelse(anc_state == "0,2",
                          "bursa_pastoris",
@@ -87,7 +91,7 @@ vit_out <- lapply(vit, function(x) {data.frame(x) %>% mutate(ancestry = ifelse(a
 
 ```{r}
 # concatenate the data tables for all the samples making a new column identifying the sample
-vit_all <- data.table::rbindlist(vit_out, idcol = "vcf_sample_name")
+vit_all <- data.table::rbindlist(vit, idcol = "vcf_sample_name")
 
 # order sample names to be in ancestry proportion order
 #lvl.order <- c(anc[1:nrow(sample_names_fam), "vcf_sample_name"])$vcf_sample_name
@@ -96,7 +100,8 @@ vit_all <- data.table::rbindlist(vit_out, idcol = "vcf_sample_name")
 #vit_all$vcf_sample_name <- factor(vit_all$vcf_sample_name, levels = lvl.order)
 ```
 
-I will start by combinging the viterbi decoding with the whole genome sequencing data
+I will start by combining the viterbi decoding with the whole genome sequencing data
+
 ```{r}
 # make new column with the trailing S[number] removed from Panko samples
 vit_all$sample_name <- str_remove_all(vit_all$vcf_sample_name, "_S[0-9]+")
@@ -105,9 +110,11 @@ vit_all$sample_name <- str_remove_all(vit_all$vcf_sample_name, "_S[0-9]+")
 vit_all <- left_join(vit_all, wgs2)
 ```
 
-NYC only introgression plot
-```{r european_introgression_plot}
-ggplot() + geom_segment(data = subset(vit_all, (chrom == "SCF_16" & k4vsNY_pop == "nyc")), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 16") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+# Introgression Plots
+
+```{r nyc introgression plot}
+# plot with funtion
+viterbi_columns_plot(df = vit_all, scaffold_num = 16, k4vsNY_population = "nyc")
 
 #ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/eu_viterbi_SCF16.png", units = "in", height = 7, width = 12)
 ```
@@ -177,11 +184,11 @@ med_rub_by_sample <- lapply(med_rub_by_sample, function(x){
 # }
 ```
 
-### Commonly introgressed regions
+### Introgressed region frequency
 
-This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and *multi-inter* from BEDTools
+This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and **multi-inter** from BEDTools
 ```{r}
-# load file
+# load multi inter output file
 nyc_inter <- read.delim("~/Documents/PhD/Research/admixture/old/nyc_multiinter_rubella.txt")
 
 # smaller working file since BEDTools outputs more information than I need
@@ -273,34 +280,23 @@ eu_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/k4Europe
 sm_eu_inter <- eu_inter[,1:5]
 
 # column names to match individuals to numbers in small multi-inter df
-eu_names <- colnames(eu_inter[6:96])
-
-# clean up sample names from column names
-eu_names <- str_remove_all(eu_names, "_rubella_chunks.bed")
+eu_names <- colnames(eu_inter[6:length(colnames(eu_inter))])
 
 # save indices for each population
-ny_indx <- which(grepl( "ny", eu_names, fixed = TRUE))
-neu_indx <- which(grepl( "ne", eu_names, fixed = TRUE))
-cen_indx <- which(grepl( "cen", eu_names, fixed = TRUE))
-med_indx <- which(grepl( "med", eu_names, fixed = TRUE))
+ny_indx <- which(grepl( "ny_rubella_chunks.bed", eu_names, fixed = TRUE))
+neu_indx <- which(grepl( "ne_rubella_chunks.bed", eu_names, fixed = TRUE))
+cen_indx <- which(grepl( "cen_rubella_chunks.bed", eu_names, fixed = TRUE))
+med_indx <- which(grepl( "med_rubella_chunks.bed", eu_names, fixed = TRUE))
 
-# checking these are true
 ```
 
 Now I would like to determine a series of tests
 ```{r}
 # plot rubella regions common to all in European cluster
-# num column should be 91
-ggplot() + geom_segment(data = subset(sm_eu_inter, num == 91), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions in all European lineage") + theme_classic()
+# num column should be 91, the same length of named columns
+ggplot() + geom_segment(data = subset(sm_eu_inter, num == length(eu_names)), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions in all European lineage") + theme_classic()
 
-ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_v.png", units = "in", height = 12, width = 12)
-
-all_eu <- sm_eu_inter[sm_eu_inter$num == 91,] %>% mutate(chunk_size = end-start)
-
-#ggplot() + geom_histogram(data= all_eu, aes(x=chunk_size), binwidth = 1) +
-  geom_vline(xintercept = mean(all_eu$chunk_size)) +
-               theme_bw()
-
+#ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_v.png", units = "in", height = 12, width = 12)
 ```
 What is the distribution of shared regions
 ```{r}
@@ -309,20 +305,19 @@ ggplot() + geom_histogram(data=sm_eu_inter, aes(x=num), binwidth = 1) + theme_bw
 
 ```{r}
 # plot rubella regions common to all in European cluster
-# num column should be 91
 ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions across all European lineage") + theme_classic()
 
-ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_freq_v.png", units = "in", height = 12, width = 12)
+#ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_freq_v.png", units = "in", height = 12, width = 12)
 
 ```
 
 Want to combine the "everybody" image with frequency image
 ```{r}
-# does not work yet
+# Works, but does not show on the legend yet.
 ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") +
-  geom_segment(data = all_eu, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + 
-  scale_color_continuous(high ="green", low = "black")+ ggtitle("introgressed regions across all European lineage") + theme_classic()
+  geom_segment(data = subset(sm_eu_inter, num == length(eu_names)), aes(x=chrom, xend=chrom, y=start, yend=end),colour= "green", linewidth = 10) + ggtitle("introgressed regions across all European lineage") + theme_classic()
 ```
+Might be able to get the legend to work by looking at the stack overflow answer https://stackoverflow.com/questions/67082430/how-to-highlight-a-single-value-on-a-continuous-color-scale-in-ggplot2
 
 ```{r}
 # determining regions private to each group, but also found in all members

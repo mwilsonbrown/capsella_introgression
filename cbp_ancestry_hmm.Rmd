@@ -1,0 +1,67 @@
+---
+title: "Capsella bursa-pastoris local ancestry inferrence"
+author: "Maya Wilson Brown"
+date: "2024-02-20"
+output: html_document
+---
+
+## Define parental and query populations
+Parental populations for this analysis will be *Capsella rubella* and the *Capsella grandiflora*-derived subgenome of *Capsella bursa-pastoris* samples from Asia. Not all *Capsella bursa-pastoris* in Asia are used; only those with no introgression history from *Capsella rubella*.
+
+Lack of introgression with *Capsella rubella* verified in admixture analysis.
+
+Samples assumed to have no introgression with *Capsella rubella* were identified as those in the "ASI" population cluster as defined by [Kryvokhyzha et. al. 2019, *Parental Legacy...*](https://doi.org/10.1371/journal.pgen.1007949) and "East" and "West" populations as defined by [Huang et. al. 2018](https://doi.org/10.1111/nph.15299)
+
+
+
+#### Formatting population mapping file for Ancestry HMM
+```{r}
+# load vcf meta data
+vcf_dat <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_vcf_metadata.txt", sep = "\t", header = T)
+
+# load CBP population definition file
+
+
+# select Capsella rubella from VCF
+cr <- vcf_dat[which(vcf_dat$species == "Capsella rubella"),]
+
+# select East Asian C. bursa-pasoris from VCF
+
+
+```
+
+
+```{r, eval=FALSE}
+a_cbp_hmm <- data.frame(sample = a_cbp_in, pop = "1")
+cr_hmm <- data.frame(sample = cr_in, pop = "0")
+q_cbp_hmm <- data.frame(sample = q_cbp, pop = "admixed") # q stands for query
+
+hmm_sample_mapping <- rbind(a_cbp_hmm, cr_hmm, q_cbp_hmm)
+```
+
+```{r, eval=FALSE}
+# write to file
+write.table(hmm_sample_mapping, file = "./hmm_sample_mapping_new.txt", quote = F, row.names = F, col.names = F)
+```
+
+## Prune sites in linkage disequilibrium in parental populations
+
+## Generate Ancestry HMM input files
+```{bash, eval=FALSE}
+# for some reason it did not like the bgzipped OR gzipped version of the vcf
+python3 vcf2ahmm.py -v fst_analysis/pruned_CbpCr_Cbp_.recode.vcf -s hmm_sample_mapping.txt > ahmm_input.txt
+```
+
+## Run Ancestry HMM
+```{bash, eval=FALSE}
+#cbp is ancestry 1, cr is ancestry 0
+ancestry_hmm \
+  -i ahmm_input.txt \
+  -s ahmm.ploidy \
+  -a 2 0.3 0.7 \
+  -p 0 -50000 -0.3 \
+  -p 1 -350000 -0.7
+```
+
+Note: the order of the -p arguments matters in the output.
+Where -a is global ancestry proportions estimated from Han et al 2015. -p indicates ancestry type 1 (CBP)
