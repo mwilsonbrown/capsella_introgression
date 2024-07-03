@@ -4,47 +4,75 @@ author: "Maya Wilson Brown"
 date: "2024-02-20"
 output: html_document
 ---
+```{r setup, include=FALSE}
+# prints included code files as chunks in knit document
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Define parental and query populations
-Parental populations for this analysis will be *Capsella rubella* and the *Capsella grandiflora*-derived subgenome of *Capsella bursa-pastoris* samples from Asia. Not all *Capsella bursa-pastoris* in Asia are used; only those with no introgression history from *Capsella rubella*.
+Parental populations for this analysis will be *Capsella rubella* and the *Capsella grandiflora*-derived subgenome of *Capsella bursa-pastoris* samples from East Asia. Not all *Capsella bursa-pastoris* in Asia are used; only those with no introgression history from *Capsella rubella*.
 
-Lack of introgression with *Capsella rubella* verified in admixture analysis.
+~~Lack of introgression with *Capsella rubella* verified in admixture analysis.~~
 
-Samples assumed to have no introgression with *Capsella rubella* were identified as those in the "ASI" population cluster as defined by [Kryvokhyzha et. al. 2019, *Parental Legacy...*](https://doi.org/10.1371/journal.pgen.1007949) and "East" and "West" populations as defined by [Huang et. al. 2018](https://doi.org/10.1111/nph.15299)
+~~Samples assumed to have no introgression with *Capsella rubella* were identified as those in the "ASI" population cluster as defined by [Kryvokhyzha et. al. 2019, *Parental Legacy...*](https://doi.org/10.1371/journal.pgen.1007949) and "East" and "West" populations as defined by [Huang et. al. 2018](https://doi.org/10.1111/nph.15299)~~
 
+Given the population structure analysis, there are 33 samples that can be included as the parental population for *C. bursa-pastoris* as they belong to the E. Asian cluster that is well defined across all K clustering groups.
 
+To ensure that inferred *C. rubella* ancestry is absent in this group, I will leave 5 individuals from this group to be evaluated as "admixed", expecting to see that they do not have C. rubella ancestry inferred.
 
 #### Formatting population mapping file for Ancestry HMM
 ```{r}
 # load vcf meta data
 vcf_dat <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_vcf_metadata.txt", sep = "\t", header = T)
 
-# load CBP population definition file
-
-
 # select Capsella rubella from VCF
-cr <- vcf_dat[which(vcf_dat$species == "Capsella rubella"),]
+cr <- vcf_dat[which(vcf_dat$species == "Capsella rubella"), "vcf_sample_name"]
+# make population column
+cr <- data.frame(sample = cr, pop = "0")
 
-# select East Asian C. bursa-pasoris from VCF
+# select NYC C. bursa-pastoris from VCF file
+nyc <- vcf_dat[which(vcf_dat$citation == "R.Panko"),"vcf_sample_name"]
 
+### Load ancestral range population file
+anc_pops <- read.csv("~/Documents/PhD/Research/capsella_population_structure/cbp_pop_str.txt", header = T, sep = "\t")
 
+# select East Asian C. bursa-pastoris from VCF
+a_cbp <- anc_pops[which(anc_pops$k3population == "E_Asia"),"vcf_sample_name"]
+# make population column
+a_cbp <- data.frame(sample = a_cbp, pop = "1")
+
+#select other C. bursa-pastoris
+other_cbp <- anc_pops[which(anc_pops$k3population != "E_Asia"),"vcf_sample_name"]
+```
+
+The NYC samples along with other C. bursa-pastoris will have their local ancestry evaluated so those will be "admixed. I will also set a random 5 from a_cbp to be admixed
+```{r}
+# combine nyc, other cbp and call them admixed
+q_cbp <- data.frame(sample = c(nyc, other_cbp), pop = "admixed") # q stands for query
+
+# select 5 random
+tst <-sample.int(33, 5, replace = F)
+# set pop to admixed
+a_cbp[tst,"pop"] <- "admixed"
 ```
 
 
 ```{r, eval=FALSE}
-a_cbp_hmm <- data.frame(sample = a_cbp_in, pop = "1")
-cr_hmm <- data.frame(sample = cr_in, pop = "0")
-q_cbp_hmm <- data.frame(sample = q_cbp, pop = "admixed") # q stands for query
-
-hmm_sample_mapping <- rbind(a_cbp_hmm, cr_hmm, q_cbp_hmm)
+# combine all data frames
+hmm_sample_mapping <- rbind(a_cbp, cr, q_cbp)
 ```
 
 ```{r, eval=FALSE}
 # write to file
-write.table(hmm_sample_mapping, file = "./hmm_sample_mapping_new.txt", quote = F, row.names = F, col.names = F)
+write.table(hmm_sample_mapping, file = "~/Documents/PhD/Research/capsella_introgression/hmm_sample_mapping.txt", quote = F, row.names = F, col.names = F)
 ```
 
 ## Prune sites in linkage disequilibrium in parental populations
+
+In order to properly estimate LD that is due to Admixture, as opposed to LD present in the ancestral/parental populations, I need to prune LD from the parental populations separately, and then remove those SNPs from the admixed population that is to be evaluated.
+
+```{bash, code = readLines("ahmm_LD_prune.sh")}
+```
 
 ## Generate Ancestry HMM input files
 ```{bash, eval=FALSE}
