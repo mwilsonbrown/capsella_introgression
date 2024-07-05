@@ -56,6 +56,15 @@ tst <-sample.int(33, 5, replace = F)
 a_cbp[tst,"pop"] <- "admixed"
 ```
 
+Save individual parent populations for LD pruning.
+```{r}
+# East Asian CBP
+write.table(a_cbp$sample, file = "~/Documents/PhD/Research/capsella_introgression/eAsia_cbp.txt", quote = F, row.names = F, col.names = F)
+
+# Capsella rubella
+write.table(cr$sample, file = "~/Documents/PhD/Research/capsella_introgression/c_rubella.txt", quote = F, row.names = F, col.names = F)
+```
+
 
 ```{r, eval=FALSE}
 # combine all data frames
