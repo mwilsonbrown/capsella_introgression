@@ -42,11 +42,13 @@ plink2 --vcf $VCF \
 --out CR 
 
 # Sites in LD in E. Asia C. bursa-pastoris population
+# NOTE: calculating LD on a small number of individuals is fraught, but alas
 plink2 --vcf $VCF \
 --indep-pairwise 100 5 0.2 \
 --keep $AS_CBP \
 --allow-extra-chr \
 --set-all-var-ids @:# \
+--bad-ld
 --out eAsia_CBP
 
 # Combine sites
@@ -56,7 +58,7 @@ cat eAsia_CBP.prune.in CR.prune.in > keep_sites.prune.in
 plink2 --vcf $VCF \
 --extract keep_sites.prune.in \
 --keep $ALL_SAMPLES \
---recode vcf bgz
+--recode vcf bgz \
 --allow-extra-chr \
 --set-all-var-ids @:# \
 --out "$OUTDIR"/ahmm_pruned_cbp
