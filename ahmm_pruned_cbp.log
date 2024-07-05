@@ -1,0 +1,36 @@
+PLINK v2.00a3.7 SSE4.2 (24 Oct 2022)
+Options in effect:
+  --allow-extra-chr
+  --export vcf bgz
+  --extract keep_sites.prune.in
+  --keep /mnt/home/wils1582/capsella_introgression/sample_names.txt
+  --out /mnt/home/wils1582/capsella_introgression/ahmm_pruned_cbp
+  --set-all-var-ids @:#
+  --vcf /mnt/research/josephslab/Maya/capsella/vcf/adrian_vcf/final_filtered/NPCRCG_CBP_filtered_final.vcf.gz
+
+Hostname: lac-386
+Working directory: /mnt/gs21/scratch/wils1582
+Start time: Fri Jul  5 13:10:09 2024
+
+Random number seed: 1720199409
+128011 MiB RAM detected; reserving 64005 MiB for main workspace.
+Using 1 compute thread.
+--vcf: 10783130 variants scanned.
+--vcf: /mnt/home/wils1582/capsella_introgression/ahmm_pruned_cbp-temporary.pgen
++ /mnt/home/wils1582/capsella_introgression/ahmm_pruned_cbp-temporary.pvar.zst
++ /mnt/home/wils1582/capsella_introgression/ahmm_pruned_cbp-temporary.psam
+written.
+257 samples (0 females, 0 males, 257 ambiguous; 257 founders) loaded from
+/mnt/home/wils1582/capsella_introgression/ahmm_pruned_cbp-temporary.psam.
+10783130 variants loaded from
+/mnt/home/wils1582/capsella_introgression/ahmm_pruned_cbp-temporary.pvar.zst.
+Note: No phenotype data present.
+--extract: 355853 variants remaining.
+--keep: 183 samples remaining.
+183 samples (0 females, 0 males, 183 ambiguous; 183 founders) remaining after
+main filters.
+355853 variants remaining after main filters.
+--export vcf bgz to
+/mnt/home/wils1582/capsella_introgression/ahmm_pruned_cbp.vcf.gz ... done.
+
+End time: Fri Jul  5 13:14:30 2024
