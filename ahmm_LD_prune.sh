@@ -1,4 +1,17 @@
-
+#!/bin/bash
+#
+#SBATCH --job-name=ahmmLDPrune
+#SBATCH --nodes=10
+#SBATCH --cpus-per-task=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=0-10:00:00
+#SBATCH --partition=josephsnodes
+#SBATCH --account=josephsnodes
+#SBATCH --mem-per-cpu=8G
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=wils1582@msu.edu
+#SBATCH --output=/mnt/scratch/wils1582/slurm/slurm-%A_%a.out
+#
 # Ancestry HMM LD Pruning
 # Prune LD SNPs in parental populations for Ancestry HMM analysis
 
@@ -7,18 +20,18 @@
 
 
 ### VARIABLES
-VCF=
-OUTDIR=
-CR=
-AS_CBP=
-ALL_SAMPLES=
+VCF=/mnt/research/josephslab/Maya/capsella/vcf/adrian_vcf/final_filtered/NPCRCG_CBP_filtered_final.vcf.gz
+OUTDIR=/mnt/home/wils1582/capsella_introgression
+CR="$OUTDIR"/c_rubella.txt
+AS_CBP="$OUTDIR"/eAsia_cbp.txt
+ALL_SAMPLES="$OUTDIR"/sample_names.txt
 
+# move directories
+cd /mnt/scratch/wils1582/
 # purge modules
 module purge
 # Load modules
 ml PLINK/2.00a3.7-gfbf-2023a
-
-# 
 
 # Sites in LD in C. rubella population
 plink2 --vcf $VCF \
@@ -46,7 +59,7 @@ plink2 --vcf $VCF \
 --recode vcf bgz
 --allow-extra-chr \
 --set-all-var-ids @:# \
---out ahmm_pruned_cbp
+--out "$OUTDIR"/ahmm_pruned_cbp
 
 # convert VCF to Ancestry HMM input format
-python3 vcf2ahmm.py -v ahmm_pruned_cbp.vcf.gz -s hmm_sample_mapping.txt
+python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_cbp.vcf.gz -s "$OUTDIR"/hmm_sample_mapping.txt
