@@ -55,13 +55,22 @@ plink2 --vcf $VCF \
 cat eAsia_CBP.prune.in CR.prune.in > keep_sites.prune.in
 
 # Prune from admixed individuals
-plink2 --vcf $VCF \
---extract keep_sites.prune.in \
---keep $ALL_SAMPLES \
---recode vcf bgz \
---allow-extra-chr \
---set-all-var-ids @:# \
---out "$OUTDIR"/ahmm_pruned_cbp
+# plink2 --vcf $VCF \
+# --extract keep_sites.prune.in \
+# --keep $ALL_SAMPLES \
+# --recode vcf bgz \
+# --allow-extra-chr \
+# --set-all-var-ids @:# \
+# --out "$OUTDIR"/ahmm_pruned_cbp
+
+# I am pretty sure plink removes the allele depth feild from the vcf and I need that
+# so we will prune with bcftools (which I also forgot last time)
+
+# reformat keep_sites file to two columns for bcftools; replaces colon with tab
+sed -i 's/:/\t/g' keep_sites.prune.in 
+
+# use bcftools to select only sites in keep_sites file
+bcftools view --targets-file keep_sites.prune.in $VCF -Ov -o "$OUTDIR"/ahmm_pruned_all
 
 # convert VCF to Ancestry HMM input format
-python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_cbp.vcf.gz -s "$OUTDIR"/hmm_sample_mapping.txt
+python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
