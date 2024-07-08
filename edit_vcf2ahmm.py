@@ -76,12 +76,12 @@ with open( args.v ) as tsv :
                 if ( sample2pop[sample_files[s]] not in totals ) :
                     totals[sample2pop[sample_files[s]]] = 0
                     alts[sample2pop[sample_files[s]]] = 0
-                if ( line[s].startswith("0/0","0|0") ) :
+                if ( line[s].startswith(("0/0","0|0")) ) :
                     totals[sample2pop[sample_files[s]]] += 2
-                elif ( line[s].startswith("0/1", "0|1", "1|0") ) :
+                elif ( line[s].startswith(("0/1", "0|1", "1|0")) ) :
                     alts[sample2pop[sample_files[s]]] += 1
                     totals[sample2pop[sample_files[s]]] += 2
-                elif ( line[s].startswith("1/1", "1|1") ) :
+                elif ( line[s].startswith(("1/1", "1|1")) ) :
                     alts[sample2pop[sample_files[s]]] += 2
                     totals[sample2pop[sample_files[s]]] += 2
 
@@ -130,11 +130,11 @@ with open( args.v ) as tsv :
 
                 ### print genotypes
                 if ( args.g == 1 ) :
-                    if ( line[s].startswith("0/0","0|0") ) :
+                    if ( line[s].startswith(("0/0","0|0")) ) :
                         print( "\t", 2, "\t", 0, end = "", sep = "" )
-                    elif ( line[s].startswith("0/1","0|1","1|0") ) :
+                    elif ( line[s].startswith(("0/1","0|1","1|0")) ) :
                         print( "\t", 1, "\t", 1, end = "", sep = "" )
-                    elif ( line[s].startswith("1/1","1|1") ) :
+                    elif ( line[s].startswith(("1/1","1|1")) ) :
                         print( "\t", 0, "\t", 2, end = "", sep = "" )
                     elif ( line[s].startswith("0") ) :
                         print( "\t", 1, "\t", 0, end = "", sep = "" )
