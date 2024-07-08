@@ -77,4 +77,4 @@ sed -i 's/:/\t/g' keep_sites.prune.in
 bcftools view --targets-file keep_sites.prune.in $VCF -Ov -o "$OUTDIR"/ahmm_pruned_all
 
 # convert VCF to Ancestry HMM input format
-python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
+#python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
