@@ -28,33 +28,33 @@ ALL_SAMPLES="$OUTDIR"/sample_names.txt
 
 # move directories
 cd /mnt/scratch/wils1582/
-# purge modules
-module purge
-# Load modules
-ml PLINK/2.00a3.7-gfbf-2023a
-
-# Sites in LD in C. rubella population
-plink2 --vcf $VCF \
---indep-pairwise 100 5 0.2 \
---keep $CR \
---allow-extra-chr \
---set-all-var-ids @:# \
---out CR 
-
-# Sites in LD in E. Asia C. bursa-pastoris population
-# NOTE: calculating LD on a small number of individuals is fraught, but alas
-plink2 --vcf $VCF \
---indep-pairwise 100 5 0.2 \
---keep $AS_CBP \
---allow-extra-chr \
---set-all-var-ids @:# \
---bad-ld
---out eAsia_CBP
-
-# Combine sites
-cat eAsia_CBP.prune.in CR.prune.in > keep_sites.prune.in
-
-# Prune from admixed individuals
+# # purge modules
+# module purge
+# # Load modules
+# ml PLINK/2.00a3.7-gfbf-2023a
+# 
+# # Sites in LD in C. rubella population
+# plink2 --vcf $VCF \
+# --indep-pairwise 100 5 0.2 \
+# --keep $CR \
+# --allow-extra-chr \
+# --set-all-var-ids @:# \
+# --out CR 
+# 
+# # Sites in LD in E. Asia C. bursa-pastoris population
+# # NOTE: calculating LD on a small number of individuals is fraught, but alas
+# plink2 --vcf $VCF \
+# --indep-pairwise 100 5 0.2 \
+# --keep $AS_CBP \
+# --allow-extra-chr \
+# --set-all-var-ids @:# \
+# --bad-ld
+# --out eAsia_CBP
+# 
+# # Combine sites
+# cat eAsia_CBP.prune.in CR.prune.in > keep_sites.prune.in
+# 
+# # Prune from admixed individuals
 # plink2 --vcf $VCF \
 # --extract keep_sites.prune.in \
 # --keep $ALL_SAMPLES \
@@ -65,6 +65,10 @@ cat eAsia_CBP.prune.in CR.prune.in > keep_sites.prune.in
 
 # I am pretty sure plink removes the allele depth feild from the vcf and I need that
 # so we will prune with bcftools (which I also forgot last time)
+
+# purge and load modules
+module purge
+ml BCFtools/1.19-GCC-13.2.0
 
 # reformat keep_sites file to two columns for bcftools; replaces colon with tab
 sed -i 's/:/\t/g' keep_sites.prune.in 
