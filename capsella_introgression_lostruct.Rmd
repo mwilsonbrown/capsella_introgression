@@ -9,6 +9,37 @@ Here, I will document a way that we validated that Ancestry HMM was pocking up o
 
 We decided to use LOSTRUCT to look at a PCA at the locus level in our introgressed and non-introgressed loci of *Capsella bursa-pasoris*.
 
+# Update: July 8, 2024
+Updating Lostruct analysis with slightly different methods. 
+
+```{r}
+# load lostruct
+library(lostruct)
+```
+
+
+~~Firstly, I converted my vcf to matrix format using **Medicago_VCF_recode.py** with Python2 and an uncompressed VCF.~~ This splits every genotype call into a column, so I end up with double the number of columns as samples.
+
+```{r}
+# load matrix format of VCF
+geno <- read.csv("~/Documents/PhD/Research/capsella_introgression/test_ahmm_vcf.output", sep = "\t", header = F, na.strings = ".") #recode dots as NA
+
+#geno2 <- geno[,-c(1:2)]
+```
+
+Compute the eigenstructure for windows along the genome.
+
+```{r}
+#do the first 4 windows of 100 SNPs
+# input matrix is just the VCF matrix without the first two columns (which are position names)
+eigenstuff <- eigen_windows(data = geno[,c(1:2)],
+              win = 100,
+              k=2)
+```
+
+
+#-----------------OLD CODE-----------------
+
 
 ```{r load libraries}
 # necessary libraries
