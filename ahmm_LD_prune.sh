@@ -71,7 +71,11 @@ module purge
 ml BCFtools/1.19-GCC-13.2.0
 
 # reformat keep_sites file to two columns for bcftools; replaces colon with tab
-sed -i 's/:/\t/g' keep_sites.prune.in 
+sed -i 's/:/\t/g' keep_sites.prune.in
+
+# Write sites that are completely missing from the parental populations to file
+
+# remove them from kept sites file
 
 # use bcftools to select only sites in keep_sites file
 bcftools view --targets-file keep_sites.prune.in $VCF -Ov -o "$OUTDIR"/ahmm_pruned_all
