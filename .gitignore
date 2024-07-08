@@ -5,3 +5,6 @@ data/
 temp_plots/
 bed_files/
 alt_plots_temp/
+*.vcf
+*.vcf.gz
+test*
