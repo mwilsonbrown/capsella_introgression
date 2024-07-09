@@ -66,17 +66,16 @@ cd /mnt/scratch/wils1582/
 # I am pretty sure plink removes the allele depth feild from the vcf and I need that
 # so we will prune with bcftools (which I also forgot last time)
 
-# purge and load modules
-module purge
-ml BCFtools/1.19-GCC-13.2.0
-
 # reformat keep_sites file to two columns for bcftools; replaces colon with tab
 sed -i 's/:/\t/g' keep_sites.prune.in
 
 # Write sites that are completely missing from the parental populations to file
+Rscript rmParentalMissing keep_sites.prune.in
 
 # remove them from kept sites file
-
+# purge and load modules
+module purge
+ml BCFtools/1.19-GCC-13.2.0
 # use bcftools to select only sites in keep_sites file
 bcftools view --targets-file keep_sites.prune.in $VCF -Ov -o "$OUTDIR"/ahmm_pruned_all
 
