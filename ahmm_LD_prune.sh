@@ -55,25 +55,25 @@ cd /mnt/scratch/wils1582/
 
 ###### Missing variant frequency in parental pops
 # Calculate missingness per variant in each parental population separately
-plink2 --vcf "$VCF" \
-  --keep $CR
-  --extract temp_keep_sites.prune.in
-  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
-  --allow-extra-chr \
-  --double-id \
-  --out cr_missing
+#plink2 --vcf "$VCF" \
+#  --keep $CR
+#  --extract temp_keep_sites.prune.in
+#  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
+#  --allow-extra-chr \
+#  --double-id \
+#  --out cr_missing
 
 # Same for parent2
-plink2 --vcf "$VCF" \
-  --keep $AS_CBP
-  --extract temp_keep_sites.prune.in
-  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
-  --allow-extra-chr \
-  --double-id \
-  --out as_missing
+#plink2 --vcf "$VCF" \
+#  --keep $AS_CBP
+#  --extract temp_keep_sites.prune.in
+#  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
+#  --allow-extra-chr \
+#  --double-id \
+#  --out as_missing
 
 # Combine variant missing files; remove those with high missing frequency, write new sites to file
-Rscript rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9
+#Rscript rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9
 
 # Plink removes the allele depth feild from the vcf and I need that to convert to AHMM format
 # so we will prune with bcftools (which I also forgot last time)
@@ -87,4 +87,4 @@ bcftools view --targets-file keep_filt_sites.txt $VCF \
   -Ov -o "$OUTDIR"/ahmm_pruned_all.vcf
 
 # convert VCF to Ancestry HMM input format
-python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
+#python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
