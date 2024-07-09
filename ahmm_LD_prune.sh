@@ -18,7 +18,6 @@
 # M. Wilson Brown
 # July 3, 2024
 
-
 ### VARIABLES
 VCF=/mnt/research/josephslab/Maya/capsella/vcf/adrian_vcf/final_filtered/NPCRCG_CBP_filtered_final.vcf.gz
 OUTDIR=/mnt/home/wils1582/capsella_introgression
@@ -52,32 +51,40 @@ cd /mnt/scratch/wils1582/
 # --out eAsia_CBP
 # 
 # # Combine sites
-# cat eAsia_CBP.prune.in CR.prune.in > keep_sites.prune.in
-# 
-# # Prune from admixed individuals
-# plink2 --vcf $VCF \
-# --extract keep_sites.prune.in \
-# --keep $ALL_SAMPLES \
-# --recode vcf bgz \
-# --allow-extra-chr \
-# --set-all-var-ids @:# \
-# --out "$OUTDIR"/ahmm_pruned_cbp
+# cat eAsia_CBP.prune.in CR.prune.in > temp_keep_sites.prune.in
 
-# I am pretty sure plink removes the allele depth feild from the vcf and I need that
+###### Missing variant frequency in parental pops
+# Calculate missingness per variant in each parental population separately
+plink2 --vcf "$VCF" \
+  --keep $CR
+  --extract temp_keep_sites.prune.in
+  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
+  --allow-extra-chr \
+  --double-id \
+  --out cr_missing
+
+# Same for parent2
+plink2 --vcf "$VCF" \
+  --keep $AS_CBP
+  --extract temp_keep_sites.prune.in
+  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
+  --allow-extra-chr \
+  --double-id \
+  --out as_missing
+
+# Combine variant missing files; remove those with high missing frequency, write new sites to file
+Rscript rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9
+
+# Plink removes the allele depth feild from the vcf and I need that to convert to AHMM format
 # so we will prune with bcftools (which I also forgot last time)
-
-# reformat keep_sites file to two columns for bcftools; replaces colon with tab
-sed -i 's/:/\t/g' keep_sites.prune.in
-
-# Write sites that are completely missing from the parental populations to file
-Rscript rmParentalMissing keep_sites.prune.in
 
 # remove them from kept sites file
 # purge and load modules
 module purge
 ml BCFtools/1.19-GCC-13.2.0
 # use bcftools to select only sites in keep_sites file
-bcftools view --targets-file keep_sites.prune.in $VCF -Ov -o "$OUTDIR"/ahmm_pruned_all
+bcftools view --targets-file keep_filt_sites.txt $VCF \
+  -Ov -o "$OUTDIR"/ahmm_pruned_all.vcf
 
 # convert VCF to Ancestry HMM input format
-#python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
+python3 "$OUTDIR"/vcf2ahmm.py -v "$OUTDIR"/ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
