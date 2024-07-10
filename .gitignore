@@ -5,6 +5,7 @@ data/
 temp_plots/
 bed_files/
 alt_plots_temp/
+ahmm_output/
 *.vcf
 *.vcf.gz
 test*

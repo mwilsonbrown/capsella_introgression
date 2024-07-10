@@ -15,7 +15,7 @@ library(rnaturalearth)
 
 
 ```{r sourcing functions}
-source("~/Documents/PhD/Research/capsella_introgression/capsella_pop_introgressin_functions.R")
+source("~/Documents/PhD/Research/capsella_introgression/capsella_introgression_func.R")
 ```
 
 # Introgression in Capsella bursa-pastoris
@@ -30,33 +30,28 @@ anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#
 
 ```{r directory variables}
 # ancestry hmm viterbi decoded output path
-ahmm_vit_path = "~/Documents/PhD/Research/ahmm_local_inference/ahmm_viterbi/"
+ahmm_vit_path = "~/Documents/PhD/Research/capsella_introgression/ahmm_output/"
 ```
 
 
 ```{r capsella sequenced information}
 # load capsella whole genome sequencing information
-wgs <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_combined_wgs.txt", sep = "\t", header = T)
+wgs <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_vcf_metadata.txt", sep = "\t", header = T)
 ```
 
 ```{r defined populations}
 #load C. bursa-pastoris population information
-pops <- read.csv("~/Documents/PhD/Research/capsella_introgression/pixy_pop_march26_2024.txt", header = F, sep = "\t")
+k3pops <- read.csv("~/Documents/PhD/Research/capsella_population_structure/cbp_pop_str.txt", header = T, sep = "\t")
+
+# ATM I do not have nyc samples in here so I will temporarily add them
+nyc_pops <- wgs[which(wgs$citation == "R.Panko"), c("vcf_sample_name", "sample_name", "state", "latitude", "longitude", "latlong_approx")]
+
+# change state column name to match pops df
+colnames(nyc_pops)[3] <- "k3population"
+
+# join data frames
+pops <- rbind(k3pops, nyc_pops)
 ```
-
-```{r wgs and populations}
-# make new column with the trailing S[number] removed from Panko samples
-pops$sample_name <- str_remove_all(pops$V1, "_S[0-9]+")
-# combine population information with wgs data
-wgs2 <- left_join(wgs, pops) #joins by sample_name
-
-# change column names for easier joining with viterbi data later
-colnames(wgs2) <- c(colnames(wgs)[-14], "vcf", "k2_pop", "k4_pop", "k4vsNY_pop")
-
-# drop the "vcf" column
-wgs2 <- select(wgs2, -c("vcf"))
-```
-
 
 # Viterbi decoding of ancestry
 
@@ -74,7 +69,8 @@ for (file in tbl) {
 
 #change list element names
 names(vit) <- str_replace_all(names(vit), "[.]viterbi", "") #remove file suffix from name
-#names(vit) <- str_replace_all(names(vit), "_S[0-9]+", "") #remove S number from NYC samples
+
+# produces list where each element is a df of the results for one sample
 ```
 
 
@@ -103,13 +99,10 @@ vit_all <- data.table::rbindlist(vit, idcol = "vcf_sample_name")
 I will start by combining the viterbi decoding with the whole genome sequencing data
 
 ```{r}
-# make new column with the trailing S[number] removed from Panko samples
-vit_all$sample_name <- str_remove_all(vit_all$vcf_sample_name, "_S[0-9]+")
-
 # combine the sample info with viterbi decoding
-vit_all <- left_join(vit_all, wgs2)
+vit_all <- left_join(vit_all, pops)
 ```
-
+# Exploratory Plots
 # Introgression Plots
 
 ```{r nyc introgression plot}
