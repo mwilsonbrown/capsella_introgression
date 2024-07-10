@@ -21,18 +21,6 @@ source("~/Documents/PhD/Research/capsella_introgression/capsella_introgression_f
 # Introgression in Capsella bursa-pastoris
 
 #### Data Preparation
-```{r ancestry colors}
-# another option for pink color is #C5839A; I was using "pink" before (FFC0CB), #E2A2B3, or just 'mistyrose'
-anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#96938E")
-
-# a warm gray or green grey need to be quite dark for it to be appropriate for all forms of colorblindness
-```
-
-```{r directory variables}
-# ancestry hmm viterbi decoded output path
-ahmm_vit_path = "~/Documents/PhD/Research/capsella_introgression/ahmm_output/"
-```
-
 
 ```{r capsella sequenced information}
 # load capsella whole genome sequencing information
@@ -101,15 +89,54 @@ I will start by combining the viterbi decoding with the whole genome sequencing 
 ```{r}
 # combine the sample info with viterbi decoding
 vit_all <- left_join(vit_all, pops)
+
+# order the scaffold levels
+vit_all$chrom <- factor(vit_all$chrom, levels = paste0("jlSCF_", 9:16))
 ```
 # Exploratory Plots
+The first thing I want to check is that the proportion of *C. rubella* ancestry is less than the proportion of *C. bursa-pastoris* ancestry.
+```{r}
+# proportion of local ancestry
+colSums(vit_all[vit_all$ancestry == "rubella", "tract_length"])/colSums(vit_all[, "tract_length"])
+
+# bursa-pastoris
+colSums(vit_all[vit_all$ancestry == "bursa_pastoris", "tract_length"])/colSums(vit_all[, "tract_length"])
+
+# heterozygous
+colSums(vit_all[vit_all$ancestry == "heterozygous", "tract_length"])/colSums(vit_all[, "tract_length"])
+```
+
+Now, it might be interesting to look at the distributions of the tract lengths. I Expect them to be something close to a poisson distribution.
+```{r}
+# tract length distribution
+tl_dist <- ggplot() + 
+  geom_histogram(data=vit_all, aes(tract_length, fill=ancestry), bins = 100) +
+  theme_bw() +
+  facet_grid(ancestry~chrom) +
+  theme(legend.position = "none")
+
+#ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 5, height = 3)
+```
+
+
 # Introgression Plots
 
 ```{r nyc introgression plot}
 # plot with funtion
-viterbi_columns_plot(df = vit_all, scaffold_num = 16, k4vsNY_population = "nyc")
+ny_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = c("NY", "NJ"))
+ggsave(paste0(temp_plotdir, "ny_viterbi_SCF16_new.png"), ny_16, units = "in", height = 7, width = 12)
 
-#ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/eu_viterbi_SCF16.png", units = "in", height = 7, width = 12)
+# plot with funtion
+eu_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = "N_Europe")
+ggsave(paste0(temp_plotdir, "eu_viterbi_SCF16_new.png"), eu_16, units = "in", height = 7, width = 12)
+
+# plot with funtion
+mena_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = "MENA")
+ggsave(paste0(temp_plotdir, "mena_viterbi_SCF16_new.png"), mena_16, units = "in", height = 7, width = 12)
+
+# plot with funtion
+easian_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = "E_Asia")
+ggsave(paste0(temp_plotdir, "easia_viterbi_SCF16_new.png"), easian_16, units = "in", height = 7, width = 12)
 ```
 
 
@@ -129,56 +156,30 @@ To use this tool, I need a bed file of introgressed regions for each sample sepa
 
 Starting with the NYC samples
 It may be possible to make a co-occurrence matrix with the bed output files.
-
 ```{r}
-# select rubella tracts
-ny_rubella_tracts <- vit_all[vit_all$ancestry == "rubella" & k4vsNY_pop == "nyc",]
-```
-
-```{r prep data to be turned into bed file}
-# select only useful columns
-temp <- ny_rubella_tracts[,c("vcf_sample_name","chrom","start","end")]
-
-# break up data frame by sample
-ny_rub_by_sample <- split(temp, temp$vcf_sample_name)
-
-# drop the sample id column from all
-ny_rub_by_sample <- lapply(ny_rub_by_sample, function(x){
-  x[,-"vcf_sample_name"]
-})
-```
-
-save each to a separate .bed file
-```{r, eval=FALSE}
-# for(i in 1:length(ny_rub_by_sample)){
-#   write.table(ny_rub_by_sample[[i]], paste0(names(ny_rub_by_sample)[i], "_ny_rubella_chunks.bed"), col.names = F, quote = F, row.names = F, sep = "\t")
-# }
+ny_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
+                                  population = c("NY", "NJ"),
+                                  outdir = bed_files)
 ```
 
 Now do the same for Mediterranean samples.
 
 ```{r mediterranenan samples, eval=FALSE}
-# select rubella tracts
-med_rubella_tracts <- vit_all[vit_all$ancestry == "rubella" & vit_all$k4vsNY_pop == "mediterranean",] #should be some other identifier
-
-# select only useful columns
-temp <- med_rubella_tracts[,c("vcf_sample_name","chrom","start","end")]
-
-# break up data frame by sample
-med_rub_by_sample <- split(temp, temp$vcf_sample_name)
-
-# drop the sample id column from all
-med_rub_by_sample <- lapply(med_rub_by_sample, function(x){
-  x[,-"vcf_sample_name"]
-})
-
-# for(i in 1:length(med_rub_by_sample)){
-#   write.table(med_rub_by_sample[[i]], paste0(names(med_rub_by_sample)[i], "_med_rubella_chunks.bed"), col.names = F, quote = F, row.names = F, sep = "\t")
-# }
+mena_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
+                                  population = "MENA",
+                                  outdir = bed_files)
 ```
 
-### Introgressed region frequency
+And N. European samples
+```{r write European to bed files}
+# Warning: this function writes files automatically
+eu_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
+                                  population = "N_Europe",
+                                  outdir = bed_files)
+```
 
+
+### Introgressed region frequency
 This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and **multi-inter** from BEDTools
 ```{r}
 # load multi inter output file
