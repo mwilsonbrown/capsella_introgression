@@ -93,7 +93,7 @@ vit_all <- left_join(vit_all, pops)
 # order the scaffold levels
 vit_all$chrom <- factor(vit_all$chrom, levels = paste0("jlSCF_", 9:16))
 ```
-# Exploratory Plots
+# Exploratory
 The first thing I want to check is that the proportion of *C. rubella* ancestry is less than the proportion of *C. bursa-pastoris* ancestry.
 ```{r}
 # proportion of local ancestry
@@ -114,7 +114,7 @@ tl_dist <- ggplot() +
   theme_bw() +
   facet_grid(ancestry~chrom) +
   theme(legend.position = "none")
-
+tl_dist
 #ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 5, height = 3)
 ```
 

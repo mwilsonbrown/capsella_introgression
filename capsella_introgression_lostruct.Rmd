@@ -15,26 +15,81 @@ Updating Lostruct analysis with slightly different methods.
 ```{r}
 # load lostruct
 library(lostruct)
+library(vcfR)
 ```
 
 
 ~~Firstly, I converted my vcf to matrix format using **Medicago_VCF_recode.py** with Python2 and an uncompressed VCF.~~ This splits every genotype call into a column, so I end up with double the number of columns as samples.
 
 ```{r}
-# load matrix format of VCF
-geno <- read.csv("~/Documents/PhD/Research/capsella_introgression/test_ahmm_vcf.output", sep = "\t", header = F, na.strings = ".") #recode dots as NA
-
-#geno2 <- geno[,-c(1:2)]
+# just testing how I want to cod this on fake data
+df <- j
 ```
 
+
+```{r}
+# load matrix format of VCF
+# geno <- read.csv("~/Documents/PhD/Research/capsella_introgression/test_ahmm_vcf.output", sep = "\t", header = F, na.strings = ".") #recode dots as NA
+
+cbpcr <- read.vcfR("~/Desktop/ahmm_pruned_all.vcf.gz", verbose = TRUE)
+# extract genotype matrix from vcfR object; This takes a hot second
+gt <- extract.gt(cbpcr, element = 'GT', as.numeric = TRUE)
+#gt2 <- extract.gt(cbpcr, element = 'GT', as.numeric = FALSE)
+```
+
+First, calculate the SNP density along each chromosome to determine good window sizes.
+
+I know from the viterbi introgression results that the minimum tract length of any ancestry is 1000 basepairs with a median of about 12k and mean of about 80k.
+
+Given the length of each chromosome, windowing by minimum base pairs will give me about 18-48K windows per chromosome.
+```{r}
+# Chromosome lengths from VCF header
+# bcftools view -h ahmm_pruned_all.vcf.gz | grep '##contig'
+
+# chromosome lengths
+chrom.lens <- c(jlSCF_10=18059344,
+                jlSCF_11=18860713,
+                jlSCF_12=16958022,
+                jlSCF_13=14108429,
+                jlSCF_14=27977798,
+                jlSCF_15=22212120,
+                jlSCF_16=17841782,
+                jlSCF_9=43809629)
+# select sites
+chroms <- cbpcr[,1]
+
+# sum sites on each chromosome
+sum(chroms@fix[,"CHROM"]=="jlSCF_9")
+
+# posit
+snps <- data.frame(chroms@fix[,c("CHROM","POS")])
+
+# turn to list
+snp_ls <- split(snps, snps[1])
+
+test<- snp_ls[[1]]
+test$POS <- as.numeric(test$POS)
+
+test2 <- test %>% mutate(dist_n = lead(POS) - lag(POS))
+
+summary(test2$dist_n)
+
+# average SNPs per chromosome
+snps_c <- unlist(lapply(snp_ls, nrow))
+```
+Base pairs between SNPs is pretty variable, but it seems like 
 Compute the eigenstructure for windows along the genome.
 
 ```{r}
 #do the first 4 windows of 100 SNPs
 # input matrix is just the VCF matrix without the first two columns (which are position names)
-eigenstuff <- eigen_windows(data = geno[,c(1:2)],
+
+# to get a good value for win here, when out data has a row for each variant site, it would be useful to now aprroximately how many SNPs fall into each section before a switch between ancestry
+eigenstuff <- eigen_windows(data = gt,
               win = 100,
               k=2)
+
+pcs <- lostruct::eigen_windows(eigen_windows_matrix(gt), k=2)
 ```
 
 
@@ -121,7 +176,7 @@ To use lostruct, you need your data in a format with rows for each variant, and 
 
 You can do this within the package if oyu have bcftools installed but I do not. :)
 
->The function eigen_windows() basically wants your data in a numeric matrix, with one row per variant and one column per sample (so that x[i,j] is the number of alleles that sample j has at site i). If your data are already in this form, then you can use it directly.
+,The function eigen_windows() basically wants your data in a numeric matrix, with one row per variant and one column per sample (so that x[i,j] is the number of alleles that sample j has at site i). If your data are already in this form, then you can use it directly.
 
 # Load VCF data
 ```{r load with VCFR, eval=FALSE}
