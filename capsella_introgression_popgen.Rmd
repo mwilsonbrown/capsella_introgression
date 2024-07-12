@@ -187,14 +187,14 @@ This section uses the generated .bed files from each *Capsella bursa-pastoris* i
 
 ```{r}
 # load multi inter output file
-nyc_inter <- read.csv(paste0("~/Documents/PhD/Research/capsella_introgression/ny_multiinter_rubella.txt"), header = T, sep = "\t")
+nyc_inter <- read.csv(paste0("~/Documents/PhD/Research/capsella_introgression/nyc_multiinter_rubella.txt"), header = T, sep = "\t")
 
 # You can pass sample names to BEDtools but I will just fix them here
 colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
 colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "_NY_rubella.bed") #remove other info
 
-# smaller working file since BEDTools outputs more information than I need
-#nyc_inter_sm <- nyc_inter[,1:4]
+# relevel factors
+nyc_inter$chrom <- factor(nyc_inter$chrom, levels = paste0("jlSCF_", 9:16))
 ```
 
 ```{r NY Crubella chunks gradient}
@@ -202,12 +202,12 @@ colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "_NY_rubella.bed") #remov
 # gradient plot where darker colors mean more individuals share an introgressed chunk
 ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
 
-#ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/ny_introgressed_freq.png", units = "in", height = 12, width = 12)
+#ggsave(paste0(temp_plotdir,"nyc_introgressed_freq.png"), units = "in", height = 12, width = 12)
 ```
 
 Let's look at the distributions of individuals that share chunks for each scaffold to get a better idea of how common is common for each scaffold.
 ```{r}
-ggplot() + geom_histogram(data = nyc_inter_sm, binwidth = 1, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
+ggplot() + geom_histogram(data = nyc_inter[,1:4], binwidth = 1, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
   xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
 ```
  
@@ -245,58 +245,66 @@ ggplot() + geom_segment(data = ny_rubella_common, aes(color= ancestry, x=vcf_sam
 Now again with the Mediterranean samples
 ```{r mediterranean, eval=FALSE}
 # load file
-med_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/med_multiinter_rubella.txt")
+mena_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/mena_multiinter_rubella.txt")
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(mena_inter) <- str_remove(colnames(mena_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
+colnames(mena_inter) <- str_remove(colnames(mena_inter), "_NY_rubella.bed") #remove other info
 
-# smaller working file since BEDTools outputs more information than I need
-med_inter <- med_inter[,1:4]
-
-# gradient plot where darker colors mean more individuals share an introgressed chunk
-ggplot() + geom_segment(data = med_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("Mediterranean introgressed regions") + theme_classic()
-
-#ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/med_introgressed_freq.png", units = "in", height = 12, width = 12)
-
-# "common" depends on the scaffold
-ggplot() + geom_histogram(data = med_inter, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
-  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
-
-# get the common chunks
-med_common_chunks <- med_inter[med_inter$num >= 4,]
-
-#prepping to join with larger dataset
-med_common_chunks$vcf_sample_name <- "common"
-med_common_chunks$ancestry <- "rubella"
-
-med_rubella_common <- rbind(med_rubella_tracts, med_common_chunks, fill=T)
-
-ggplot() + geom_segment(data = subset(med_rubella_common, chrom == "SCF_9"), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) + scale_color_manual(values=anc.cols) + ggtitle("Scaffold 9: Mediterranean") + ylab("position") + xlab("Sample Name") + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+# relevel factors
+mena_inter$chrom <- factor(mena_inter$chrom, levels = paste0("jlSCF_", 9:16))
 ```
 
+```{r}
+
+# gradient plot where darker colors mean more individuals share an introgressed chunk
+ggplot() + geom_segment(data = mena_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("Middle East, North African, and Mediterranean introgressed regions") + theme_classic()
+
+#ggsave(paste0(temp_plotdir,"mena_introgressed_freq.png"), units = "in", height = 12, width = 12)
+```
+I will plot the N. European separately just for posterity but I am really more interested in the shared and private regions.
 ##### MultiInter by K4 group
 An easy way to figure out which regions are shared by all of the groups and private to each group is to do the multi-inter analysis on all of the capsella bursa-pastoris in the European lineage.
 
 ```{r}
 # load file
-eu_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/k4European_cbp_multiinter_rubella.txt")
+all_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/all_multiinter_rubella.txt")
 
-# smaller working file but include which individuals are in each row
-sm_eu_inter <- eu_inter[,1:5]
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(all_inter) <- str_remove(colnames(all_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
 
 # column names to match individuals to numbers in small multi-inter df
-eu_names <- colnames(eu_inter[6:length(colnames(eu_inter))])
+all_names <- colnames(all_inter[6:length(colnames(all_inter))])
 
 # save indices for each population
-ny_indx <- which(grepl( "ny_rubella_chunks.bed", eu_names, fixed = TRUE))
-neu_indx <- which(grepl( "ne_rubella_chunks.bed", eu_names, fixed = TRUE))
-cen_indx <- which(grepl( "cen_rubella_chunks.bed", eu_names, fixed = TRUE))
-med_indx <- which(grepl( "med_rubella_chunks.bed", eu_names, fixed = TRUE))
-
+nyc_indx <- which(grepl( "NY_rubella.bed", all_names, fixed = TRUE))
+neu_indx <- which(grepl( "N_Europe_rubella.bed", all_names, fixed = TRUE))
+mena_indx <- which(grepl( "MENA_rubella.bed", all_names, fixed = TRUE))
 ```
 
 Now I would like to determine a series of tests
+
+```{r}
+# distribution of region sharing
+ggplot() + geom_histogram(data = all_inter[,1:4], binwidth = 5, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
+  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
+```
+Regions shared across all introgressed pops
+```{r}
+# how many shared shared by over 95?
+length(which(all_inter$num > 95))
+
+#where are they located?
+all_inter[which(all_inter$num > 95),]
+
+# which individuals are *not* in these groups?
+```
+
+
+There is one 4000bp region on chromosome 12 that is shared by all the introgressed populations individuals. This region is know of note for population genetic studies as it should be pretty old to be shared among all.
 ```{r}
 # plot rubella regions common to all in European cluster
-# num column should be 91, the same length of named columns
-ggplot() + geom_segment(data = subset(sm_eu_inter, num == length(eu_names)), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions in all European lineage") + theme_classic()
+# num column should be the same length of named columns
+ggplot() + geom_segment(data = subset(all_inter, num == length(all_names)), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions in all European lineage") + theme_classic()
 
 #ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_v.png", units = "in", height = 12, width = 12)
 ```
