@@ -60,3 +60,18 @@ viterbi_columns_plot <- function(df, scaffold_num, population){
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
   return(pl)
 }
+
+viterbi_columns_plot_allChr <- function(df, population){
+  pl <- ggplot() + geom_segment(data = subset(df, k3population %in% population),
+                                aes(color= ancestry, x=sample_name, xend=sample_name, y=start, yend=end),
+                                linewidth = 8) +
+    facet_grid(~chrom, scales = "free_y") +
+    scale_color_manual(values=anc.cols) +
+    ggtitle(paste(population," introgression patterns")) +
+    ylab("position") + xlab("Sample Name") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+  return(pl)
+}

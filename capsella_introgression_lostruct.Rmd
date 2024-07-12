@@ -80,19 +80,42 @@ snps_c <- unlist(lapply(snp_ls, nrow))
 Base pairs between SNPs is pretty variable, but it seems like 
 Compute the eigenstructure for windows along the genome.
 
+I am going to split the gt matrix into chromosomes, so that I can apply a windowing function to each chromosome separately.
 ```{r}
-#do the first 4 windows of 100 SNPs
-# input matrix is just the VCF matrix without the first two columns (which are position names)
+# splitting the gt matrix by chromomosome
+sc9 <- gt[1:max(which(str_detect(rownames(gt), "jlSCF_9"))),] #scaffold 9
+sc10 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_9")))):max(which(str_detect(rownames(gt), "jlSCF_10"))),] #scaffold 10
+sc11 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_10")))):max(which(str_detect(rownames(gt), "jlSCF_11"))),] #scaffold 11
+sc12 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_11")))):max(which(str_detect(rownames(gt), "jlSCF_12"))),] #scaffold 12
 
-# to get a good value for win here, when out data has a row for each variant site, it would be useful to now aprroximately how many SNPs fall into each section before a switch between ancestry
-eigenstuff <- eigen_windows(data = gt,
-              win = 100,
-              k=2)
+sc13 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_12")))):max(which(str_detect(rownames(gt), "jlSCF_13"))),] #scaffold 13
+sc14 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_13")))):max(which(str_detect(rownames(gt), "jlSCF_14"))),] #scaffold 14
+sc15 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_14")))):max(which(str_detect(rownames(gt), "jlSCF_15"))),] #scaffold 15
+sc16 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_15")))):max(which(str_detect(rownames(gt), "jlSCF_16"))),] #scaffold 16
+```
 
-pcs <- lostruct::eigen_windows(eigen_windows_matrix(gt), k=2)
+Fold all these into a list to make applying eigenwindows easier?
+```{r}
+scf_ls <- list(sc9,sc10,sc11,sc12,sc13,sc14,sc15,sc16)
 ```
 
 
+```{r}
+# calculate eigenvals and vecs for windows of size 3000 bp on scaffold 9
+eigen9 <- lostruct::eigen_windows(data = sc9,
+              win = 3000,
+              k=2)
+
+eigen11 <- lostruct::eigen_windows(data = sc11,
+              win = 1000,
+              k=2)
+```
+
+Testing with apply
+```{r}
+eigen_list <- lapply(scf_ls, lostruct::eigen_windows, win=3000, k=2)
+```
+I think the SNP calls on the other chromosomes have too many zeros, so I will ignore them for now.
 #-----------------OLD CODE-----------------
 
 

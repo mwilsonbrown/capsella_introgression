@@ -115,9 +115,8 @@ tl_dist <- ggplot() +
   facet_grid(ancestry~chrom) +
   theme(legend.position = "none")
 tl_dist
-#ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 5, height = 3)
+ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 5, height = 10)
 ```
-
 
 # Introgression Plots
 
@@ -148,7 +147,10 @@ ggplot() + geom_segment(data = subset(vit_all, k4vsNY_pop == "nyc"), aes(color= 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 8)) +
    facet_wrap(~chrom, scales = "free_y")
 
-#ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/ny_viterbi_all.png", units = "in", height = 12, width = 19)
+nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = c("NY", "NJ"))
+
+# why is the order wrong >:(
+ggsave(paste0(temp_plotdir,"ny_viterbi_all.png"),nyc_allc, units = "in", height = 12, width = 19)
 ```
 
 ###### Introgression .bed files
@@ -177,7 +179,6 @@ eu_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
                                   population = "N_Europe",
                                   outdir = bed_files)
 ```
-
 
 ### Introgressed region frequency
 This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and **multi-inter** from BEDTools
