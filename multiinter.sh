@@ -18,7 +18,7 @@
 #
 #
 # move to correct directory
-cd mnt/scratch/wils1582/bed_files/
+cd /mnt/scratch/wils1582/bed_files/
 
 #####VARS
 OUTDIR=/mnt/home/capsella_introgression
