@@ -182,6 +182,11 @@ eu_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
 
 ### Introgressed region frequency
 This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and **multi-inter** from BEDTools
+
+```{bash, code = readLines("multiinter.sh")}
+```
+
+
 ```{r}
 # load multi inter output file
 nyc_inter <- read.delim("~/Documents/PhD/Research/admixture/old/nyc_multiinter_rubella.txt")
