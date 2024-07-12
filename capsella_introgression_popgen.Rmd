@@ -159,15 +159,13 @@ To use this tool, I need a bed file of introgressed regions for each sample sepa
 Starting with the NYC samples
 It may be possible to make a co-occurrence matrix with the bed output files.
 ```{r}
-ny_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
-                                  population = c("NY", "NJ"),
-                                  outdir = bed_files)
+ny_rub_by_sample <- bed_by_sample(vit_all, anc = "rubella", population = c("NY", "NJ"), outdir = bed_files)
 ```
 
 Now do the same for Mediterranean samples.
 
 ```{r mediterranenan samples, eval=FALSE}
-mena_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
+mena_rub_by_sample <- bed_by_sample(vit_all, anc = "rubella",
                                   population = "MENA",
                                   outdir = bed_files)
 ```
@@ -175,7 +173,7 @@ mena_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
 And N. European samples
 ```{r write European to bed files}
 # Warning: this function writes files automatically
-eu_rub_by_sample <- bed_by_sample(vit_all, ancestry = "rubella",
+eu_rub_by_sample <- bed_by_sample(vit_all, anc = "rubella",
                                   population = "N_Europe",
                                   outdir = bed_files)
 ```
@@ -189,16 +187,20 @@ This section uses the generated .bed files from each *Capsella bursa-pastoris* i
 
 ```{r}
 # load multi inter output file
-nyc_inter <- read.delim("~/Documents/PhD/Research/admixture/old/nyc_multiinter_rubella.txt")
+nyc_inter <- read.csv(paste0("~/Documents/PhD/Research/capsella_introgression/ny_multiinter_rubella.txt"), header = T, sep = "\t")
+
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
+colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "_NY_rubella.bed") #remove other info
 
 # smaller working file since BEDTools outputs more information than I need
-nyc_inter_sm <- nyc_inter[,1:4]
+#nyc_inter_sm <- nyc_inter[,1:4]
 ```
 
 ```{r NY Crubella chunks gradient}
 # mistyrose = #FFE4E1, violetred4 = #8B2252
 # gradient plot where darker colors mean more individuals share an introgressed chunk
-ggplot() + geom_segment(data = nyc_inter_sm, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
+ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
 
 #ggsave("~/Documents/PhD/Research/capsella_local_ancestry/plots_temp/ny_introgressed_freq.png", units = "in", height = 12, width = 12)
 ```

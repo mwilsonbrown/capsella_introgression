@@ -13,11 +13,11 @@ temp_plotdir <- "~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/
 bed_files <- "~/Documents/PhD/Research/capsella_introgression/bed_files/"
 
 ##### Data Wrangling-------
-bed_by_sample <- function(df, ancestry, population, outdir) {
+bed_by_sample <- function(df, anc, population, outdir){
   # select specified ancestry paths
-  tracts <- df[which(df$ancestry == ancestry & df$k3population %in% population),]
+  tracts <- df[which(df$k3population %in% population & df$ancestry == anc),]
   # select only useful columns
-  temp <- tracts[,c("vcf_sample_name","chrom","start","end")]
+  temp <- tracts[,c("vcf_sample_name","chrom","start","end", "ancestry")]
   
   # break up data frame by sample
   by_sample <- split(temp, temp$vcf_sample_name)
