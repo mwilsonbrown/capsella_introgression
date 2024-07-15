@@ -4,7 +4,8 @@
 
 ##### Setup In/Out----------
 # another option for pink color is #C5839A; I was using "pink" before (FFC0CB), #E2A2B3, or just 'mistyrose'
-anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#96938E")
+#anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#96938E")
+anc.cols <- c(bursa_pastoris = "#6D9636", rubella = "#FFCCFD", heterozygous = "#96938E")
 # a warm gray or green grey need to be quite dark for it to be appropriate for all forms of colorblindness
 
 # paths

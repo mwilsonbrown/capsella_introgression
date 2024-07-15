@@ -110,14 +110,15 @@ Now, it might be interesting to look at the distributions of the tract lengths. 
 ```{r}
 # tract length distribution
 tl_dist <- ggplot() + 
-  geom_histogram(data=vit_all, aes(tract_length, fill=ancestry), bins = 100) +
+  geom_histogram(data=vit_all, aes(tract_length, fill=ancestry), bins = 40) +
+  scale_fill_manual(values = anc.cols) +
   theme_bw() +
-  facet_grid(ancestry~chrom) +
+  facet_grid(chrom~ancestry, scales = "free") +
   theme(legend.position = "none")
 tl_dist
 ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 5, height = 10)
 ```
-
+Most tracts are short, and bursa-pastoris tracts are on average, longer than others. Heterozygous tracts are the shortest.
 # Introgression Plots
 
 ```{r nyc introgression plot}
@@ -150,7 +151,7 @@ ggplot() + geom_segment(data = subset(vit_all, k4vsNY_pop == "nyc"), aes(color= 
 nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = c("NY", "NJ"))
 
 # why is the order wrong >:(
-ggsave(paste0(temp_plotdir,"ny_viterbi_all.png"),nyc_allc, units = "in", height = 12, width = 19)
+ggsave(paste0(temp_plotdir,"ny_viterbi_all2.png"),nyc_allc, units = "in", height = 12, width = 19)
 ```
 
 ###### Introgression .bed files
@@ -184,7 +185,7 @@ This section uses the generated .bed files from each *Capsella bursa-pastoris* i
 ```{bash, code = readLines("multiinter.sh")}
 ```
 
-
+Let's take a look at the output
 ```{r}
 # load multi inter output file
 nyc_inter <- read.csv(paste0("~/Documents/PhD/Research/capsella_introgression/nyc_multiinter_rubella.txt"), header = T, sep = "\t")
@@ -200,7 +201,9 @@ nyc_inter$chrom <- factor(nyc_inter$chrom, levels = paste0("jlSCF_", 9:16))
 ```{r NY Crubella chunks gradient}
 # mistyrose = #FFE4E1, violetred4 = #8B2252
 # gradient plot where darker colors mean more individuals share an introgressed chunk
-ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
+# ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
+
+ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_scico(palette = 'acton', direction = -1) + ggtitle("New York introgressed region frequency") + theme_classic()
 
 #ggsave(paste0(temp_plotdir,"nyc_introgressed_freq.png"), units = "in", height = 12, width = 12)
 ```
@@ -288,8 +291,11 @@ Now I would like to determine a series of tests
 ggplot() + geom_histogram(data = all_inter[,1:4], binwidth = 5, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
   xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
 ```
-Regions shared across all introgressed pops
+##### High Frequency shared regions
 ```{r}
+#regions shared by all
+all_inter[which(all_inter$num == 100), 1:4]
+
 # how many shared shared by over 95?
 length(which(all_inter$num > 95))
 
@@ -321,6 +327,85 @@ ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom
 
 ```
 
+It would be useful to be able to plot these things on top of one another
+```{r}
+#tuncate df
+sm_all_inter <- all_inter[,1:5]
+
+all_int_mat <- str_split_fixed(all_inter$list, ",", n=100)
+
+#forcing matrix to numeric fills blanks with NA
+class(all_int_mat) <- "numeric"
+
+#combine
+test <- cbind(sm_all_inter, data.frame(all_int_mat))
+
+#pivot longer
+test2 <- pivot_longer(test, cols = c(paste0("X", 1:100)), values_drop_na = T)
+
+# check the last row of each segement is the same number as name?
+```
+
+Now to drop name column and assign population to each integer
+```{r}
+# drop name column
+test2 <- subset(test2, select = -c(name, list))
+
+# new column where indices indicate population
+test3 <- test2 %>% mutate(population = case_when(value %in% nyc_indx ~ "NYC",
+                                        value %in% neu_indx ~ "N. Europe",
+                                        value %in% mena_indx ~ "MENA"))
+```
+
+Once I have the above, then maybe I can split it into dataframes?
+```{r}
+test4 <- split(test3, test3$population)
+```
+
+Just working with one dataset at a time
+```{r}
+ggplot() + geom_linerange(data = test3, aes(x=population, ymin=start, ymax=end, color = num), linewidth = 5)+ coord_flip() + facet_wrap(~chrom, scales = "free", nrow = 8)
+
+#ggsave("~/Desktop/test_plot1.png", width = 5, height = 11)
+```
+
+
+```{r}
+#withggnewscale
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, scales = "free", nrow = 8) + coord_flip() +
+  geom_linerange(data = test4[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = c('#99000d', '#fee5d9')) +
+  new_scale_color() + 
+  geom_linerange(data = test4[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = c('#084594', '#4292c6')) +
+  new_scale_color() + 
+  geom_linerange(data = test4[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = c('mediumorchid4', 'lightpink'))
+
+ggsave("~/Desktop/test_plot2.png", width = 5, height = 11)
+```
+
+I think in reality, I wanted all the within population bed files in separate data frames?
+
+Okay, I think it makes sense to have each of the populations have their own number scale
+
+```{r}
+#withggnewscale and scico color pallets
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, scales = "free", nrow = 8) + coord_flip() +
+  geom_linerange(data = test4[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = test4[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'bamako', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = test4[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'lapaz', direction = -1)
+
+ggsave("~/Desktop/test_plot3.png", width = 5, height = 11)
+```
+
+
+### Older code
 Want to combine the "everybody" image with frequency image
 ```{r}
 # Works, but does not show on the legend yet.
