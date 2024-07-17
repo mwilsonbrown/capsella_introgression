@@ -116,7 +116,7 @@ tl_dist <- ggplot() +
   facet_grid(chrom~ancestry, scales = "free") +
   theme(legend.position = "none")
 tl_dist
-ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 5, height = 10)
+ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 7, height = 5)
 ```
 Most tracts are short, and bursa-pastoris tracts are on average, longer than others. Heterozygous tracts are the shortest.
 # Introgression Plots
@@ -141,13 +141,6 @@ ggsave(paste0(temp_plotdir, "easia_viterbi_SCF16_new.png"), easian_16, units = "
 
 
 ```{r nyc_introgression_plot_allScaffolds}
-ggplot() + geom_segment(data = subset(vit_all, k4vsNY_pop == "nyc"), aes(color= ancestry, x=vcf_sample_name, xend=vcf_sample_name, y=start, yend=end), linewidth = 8) +
-  scale_color_manual(values=anc.cols) + 
-  ggtitle("New York introgression patterns") + 
-  ylab("position") + xlab("Sample Name") + 
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 8)) +
-   facet_wrap(~chrom, scales = "free_y")
-
 nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = c("NY", "NJ"))
 
 # why is the order wrong >:(
@@ -295,37 +288,10 @@ ggplot() + geom_histogram(data = all_inter[,1:4], binwidth = 5, aes(x=num)) + fa
 ```{r}
 #regions shared by all
 all_inter[which(all_inter$num == 100), 1:4]
-
-# how many shared shared by over 95?
-length(which(all_inter$num > 95))
-
-#where are they located?
-all_inter[which(all_inter$num > 95),]
-
-# which individuals are *not* in these groups?
 ```
 
 
 There is one 4000bp region on chromosome 12 that is shared by all the introgressed populations individuals. This region is know of note for population genetic studies as it should be pretty old to be shared among all.
-```{r}
-# plot rubella regions common to all in European cluster
-# num column should be the same length of named columns
-ggplot() + geom_segment(data = subset(all_inter, num == length(all_names)), aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions in all European lineage") + theme_classic()
-
-#ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_v.png", units = "in", height = 12, width = 12)
-```
-What is the distribution of shared regions
-```{r}
-ggplot() + geom_histogram(data=sm_eu_inter, aes(x=num), binwidth = 1) + theme_bw()
-```
-
-```{r}
-# plot rubella regions common to all in European cluster
-ggplot() + geom_segment(data = sm_eu_inter, aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "black", low = "violet") + ggtitle("introgressed regions across all European lineage") + theme_classic()
-
-#ggsave("~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/allEuLineage_introgressed_freq_v.png", units = "in", height = 12, width = 12)
-
-```
 
 It would be useful to be able to plot these things on top of one another
 ```{r}
@@ -343,7 +309,7 @@ test <- cbind(sm_all_inter, data.frame(all_int_mat))
 #pivot longer
 test2 <- pivot_longer(test, cols = c(paste0("X", 1:100)), values_drop_na = T)
 
-# check the last row of each segement is the same number as name?
+# check the last row of each segment is the same number as name?
 ```
 
 Now to drop name column and assign population to each integer
@@ -357,16 +323,16 @@ test3 <- test2 %>% mutate(population = case_when(value %in% nyc_indx ~ "NYC",
                                         value %in% mena_indx ~ "MENA"))
 ```
 
-Once I have the above, then maybe I can split it into dataframes?
-```{r}
-test4 <- split(test3, test3$population)
-```
-
 Just working with one dataset at a time
 ```{r}
 ggplot() + geom_linerange(data = test3, aes(x=population, ymin=start, ymax=end, color = num), linewidth = 5)+ coord_flip() + facet_wrap(~chrom, scales = "free", nrow = 8)
 
 #ggsave("~/Desktop/test_plot1.png", width = 5, height = 11)
+```
+
+Once I have the above, then maybe I can split it into dataframes?
+```{r}
+test4 <- split(test3, test3$population)
 ```
 
 
@@ -403,7 +369,141 @@ ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, s
 
 ggsave("~/Desktop/test_plot3.png", width = 5, height = 11)
 ```
+As mentioned above, it is actually more intitituve to me and beneficial to have each population on their own number scale. I will achieve that by joining the dfs?
+```{r N. European, eval=FALSE}
+# load file
+neu_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/neu_multiinter_rubella.txt")
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(neu_inter) <- str_remove(colnames(neu_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
+colnames(neu_inter) <- str_remove(colnames(neu_inter), "_N_Europe_rubella.bed") #remove other info
 
+# relevel factors
+neu_inter$chrom <- factor(neu_inter$chrom, levels = paste0("jlSCF_", 9:16))
+```
+
+
+```{r}
+# add population indicators to all
+nyc_inter$population <- "NYC"
+neu_inter$population <- "N. Europe"
+mena_inter$population <- "MENA"
+
+# combine the relevant part of the dfs
+c_inter <- list(nyc_inter[,c("chrom","start","end","num","population")],neu_inter[,c("chrom","start","end","num","population")],mena_inter[,c("chrom","start","end","num","population")])
+```
+
+Attempt to generate plot?
+```{r}
+#withggnewscale and scico color pallets
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, scales = "free", nrow = 2, ncol=4) + coord_flip() +
+  theme_bw()+
+  geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'lapaz', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'bamako', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1)
+
+ggsave("~/Desktop/test_plot4.png", width = 11, height = 5)
+```
+
+As mentioned above, I can look at different combination of regions. However, the set math works best when the list
+
+```{r}
+# first, regions where any element of nyc is present and elements of mena and europe are not
+nyc_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, nyc_indx)) >= 1, "in NYC", NA)
+})
+```
+There is another group which I may be interested in, which is the NJ population by itself. Thats population 24 and I can print the names to know they correspond to indices 43,44,45
+```{r}
+nj_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, 43:45)) >= 1, "in NJ", NA)
+})
+```
+
+There is a more elegant way to do this (probably with casewhen) but I can fix that later. The plan is to get a vector of region status for each population
+```{r}
+# middle east and north africa
+mena_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, mena_indx)) >= 1, "in MENA", NA)
+})
+
+# Europe
+neu_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, neu_indx)) >= 1, "in N. Europe", NA)
+})
+
+# combine them
+chunk_status <- data.frame(nyc_status,nj_status,mena_status,neu_status)
+
+ind <- rowSums(is.na(chunk_status)) == ncol(chunk_status)
+ind2 <- rowSums(is.na(all_stat[,6:8])) == ncol(all_stat[,6:8])
+```
+
+Bind with actual bed data and check which regions are in or out of each population
+```{r}
+all_stat <- cbind(all_inter[,1:5], chunk_status )
+```
+
+```{r}
+# filter keeps rows that match a condition
+# keep rows where europe and mena are NA (implying nyc is not, because I do not have empty regions)
+seg_nyc_only <- all_stat %>%
+   filter(if_all(c(mena_status,neu_status), is.na))
+
+# present in NY/NJ and Europe; absent from MENA
+seg_nyc_eu <- all_stat %>%
+   filter(!(if_any(c(nyc_status, neu_status), is.na)) & is.na(mena_status))
+
+# present in NY/NJ and MENA; absent from Europe
+seg_nyc_mena <- all_stat %>%
+   filter(!(if_any(c(nyc_status, mena_status), is.na)) & is.na(neu_status))
+
+# present in NJ and Europe, which may drive the relationship between the two
+seg_nj_neu <- all_stat %>%
+   filter(!(if_any(c(nj_status, neu_status), is.na)) & is.na(mena_status))
+
+# only in NJ (of which NY is inclusive)
+seg_nj <- all_stat %>%
+   filter(!is.na(nj_status) & if_all(c(neu_status, mena_status), is.na))
+
+# private to NJ (not found elsewhere in NY)
+seg_nj[which(seg_nj$num == 3),]
+```
+There is only `r nrow(seg_nj)` region present in NJ and not found elsewhere in the NYC group, nor is it found in other sampled introgressed populations. There are `r nrow(seg_nyc_only)` introgressed regions only found in NYC, that have not been sampled in the MENA nor the N. European population.
+
+There are introgressed regions that are only found in NJ and a sample in the Mediterranean population (namely KYRG-3-14, which is index 97 in this data): number = `r nrow(which(seg_nyc_mena$num ==4 & seg_nyc_mena$list == c(43,44,45,97)`
+
+Visual inspection of the data shows there are only two regions that are in the N. European group and NJ and not in the rest of NYC, and those are two regions on scaffold 15
+```{r}
+seg_nj_neu[107:108,]
+
+seg_nj_neu[107:108,"end"] - seg_nj_neu[107:108,"start"]
+```
+4k and 12k bp respectively.
 
 ### Older code
 Want to combine the "everybody" image with frequency image

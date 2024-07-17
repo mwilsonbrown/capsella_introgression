@@ -58,6 +58,7 @@ viterbi_columns_plot <- function(df, scaffold_num, population){
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
+          legend.position = "bottom",
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
   return(pl)
 }
@@ -73,6 +74,7 @@ viterbi_columns_plot_allChr <- function(df, population){
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
+          legend.position = "bottom",
           axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
   return(pl)
 }
