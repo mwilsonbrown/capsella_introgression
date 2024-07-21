@@ -19,7 +19,7 @@
 # July 3, 2024
 
 ### VARIABLES
-VCF=/mnt/research/josephslab/Maya/capsella/vcf/adrian_vcf/final_filtered/NPCRCG_CBP_filtered_final.vcf.gz
+VCF=/mnt/scratch/wils1582/july15/CBP_CRCG_final_filtered.vcf.gz
 OUTDIR=/mnt/home/wils1582/capsella_introgression
 CR="$OUTDIR"/c_rubella.txt
 AS_CBP="$OUTDIR"/eAsia_cbp.txt
@@ -31,46 +31,49 @@ cd /mnt/scratch/wils1582/
 # module purge
 # # Load modules
 # ml PLINK/2.00a3.7-gfbf-2023a
-# 
+#
 # # Sites in LD in C. rubella population
-# plink2 --vcf $VCF \
-# --indep-pairwise 100 5 0.2 \
-# --keep $CR \
-# --allow-extra-chr \
-# --set-all-var-ids @:# \
-# --out CR 
-# 
-# # Sites in LD in E. Asia C. bursa-pastoris population
-# # NOTE: calculating LD on a small number of individuals is fraught, but alas
-# plink2 --vcf $VCF \
-# --indep-pairwise 100 5 0.2 \
-# --keep $AS_CBP \
-# --allow-extra-chr \
-# --set-all-var-ids @:# \
-# --bad-ld
-# --out eAsia_CBP
-# 
-# # Combine sites
-# cat eAsia_CBP.prune.in CR.prune.in > temp_keep_sites.prune.in
+ plink2 --vcf $VCF \
+ --indep-pairwise 100 5 0.2 \
+ --keep $CR \
+ --allow-extra-chr \
+ --set-all-var-ids @:# \
+ --out CR
 
-###### Missing variant frequency in parental pops
-# Calculate missingness per variant in each parental population separately
-#plink2 --vcf "$VCF" \
-#  --keep $CR
-#  --extract temp_keep_sites.prune.in
-#  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
-#  --allow-extra-chr \
-#  --double-id \
-#  --out cr_missing
+ # Sites in LD in E. Asia C. bursa-pastoris population
+ # NOTE: calculating LD on a small number of individuals is fraught, but alas
+ plink2 --vcf $VCF \
+ --indep-pairwise 100 5 0.2 \
+ --keep $AS_CBP \
+ --allow-extra-chr \
+ --set-all-var-ids @:# \
+ --out eAsia_CBP
+
+# Combine sites
+cat eAsia_CBP.prune.in CR.prune.in > temp_keep_sites.prune.in
+
+# for some reason, I need to duplicate the columns for the samples file in this version of plink
+
+
+##### Missing variant frequency in parental pops
+#Calculate missingness per variant in each parental population separately
+plink2 --vcf "$VCF" \
+  --keep $CR \
+  --extract temp_keep_sites.prune.in \
+  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
+  --allow-extra-chr \
+  --double-id \
+  --set-all-var-ids @:# \
+  --out cr_missing
 
 # Same for parent2
-#plink2 --vcf "$VCF" \
-#  --keep $AS_CBP
-#  --extract temp_keep_sites.prune.in
-#  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
-#  --allow-extra-chr \
-#  --double-id \
-#  --out as_missing
+plink2 --vcf "$VCF" \
+  --keep $AS_CBP \
+  --extract temp_keep_sites.prune.in \
+  --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
+  --allow-extra-chr \
+  --double-id \
+  --out as_missing
 
 # Combine variant missing files; remove those with high missing frequency, write new sites to file
 #Rscript rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9

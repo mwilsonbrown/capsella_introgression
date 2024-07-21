@@ -11,8 +11,8 @@
 args = commandArgs(trailingOnly=TRUE)
 
 # load variant missingness for parental samples
-p1_miss <- read.csv(arg[1], sep = "\t", header = T)
-p2_miss <- read.csv(arg[2], sep = "\t", header = T)
+p1_miss <- read.csv(as.character(arg[1]), sep = "\t", header = T)
+p2_miss <- read.csv(as.character(arg[2]), sep = "\t", header = T)
 
 # ### Plots
 # ggplot() +
