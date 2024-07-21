@@ -18,14 +18,32 @@ library(lostruct)
 library(vcfR)
 ```
 
+Loading sample data
 
-~~Firstly, I converted my vcf to matrix format using **Medicago_VCF_recode.py** with Python2 and an uncompressed VCF.~~ This splits every genotype call into a column, so I end up with double the number of columns as samples.
-
-```{r}
-# just testing how I want to cod this on fake data
-df <- j
+```{r capsella sequenced information}
+# load capsella whole genome sequencing information
+wgs <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_vcf_metadata.txt", sep = "\t", header = T)
 ```
 
+```{r defined populations}
+#load C. bursa-pastoris population information
+k3pops <- read.csv("~/Documents/PhD/Research/capsella_population_structure/cbp_pop_str.txt", header = T, sep = "\t")
+
+# ATM I do not have nyc samples in here so I will temporarily add them
+nyc_pops <- wgs[which(wgs$citation == "R.Panko"), c("vcf_sample_name", "sample_name", "state", "latitude", "longitude", "latlong_approx")]
+
+# change state column name to match pops df
+colnames(nyc_pops)[3] <- "k3population"
+
+# join data frames
+pops <- rbind(k3pops, nyc_pops)
+```
+
+Join and keep only necessary information
+```{r}
+# join vcf data and population output from capsella_population_def
+sample_info <- left_join(wgs, pops)
+```
 
 ```{r}
 # load matrix format of VCF
@@ -105,6 +123,9 @@ scf_ls <- list(sc9,sc10,sc11,sc12,sc13,sc14,sc15,sc16)
 eigen9 <- lostruct::eigen_windows(data = sc9,
               win = 3000,
               k=2)
+eigen10 <- lostruct::eigen_windows(data = sc10,
+              win = 1000,
+              k=2)
 
 eigen11 <- lostruct::eigen_windows(data = sc11,
               win = 1000,
@@ -116,6 +137,87 @@ Testing with apply
 eigen_list <- lapply(scf_ls, lostruct::eigen_windows, win=3000, k=2)
 ```
 I think the SNP calls on the other chromosomes have too many zeros, so I will ignore them for now.
+
+# Plots??
+The first window of scaffold 9 should be C. rubella for all of the NYC individuals. I think?
+
+```{r lostruct functions}
+# Function for reformatting lostruct output for easy plotting
+  # x input is a data.frame from lostruct where each row is a window and the columns are eigenvals for each sample
+
+reform_map <- function(x, dat){
+  #for each row, select all columns with PC1 in their name and store
+  #pc1_val <- x[which(grepl("PC_1_", names(x[1:length(x)]), fixed = T))]
+  pc1_val <- x[which(str_detect(colnames(dat), "PC_1_"))]
+  #get sample name from named vector of PC1 values
+  sample_id1 <- str_remove(names(pc1_val), "PC_1_")
+  #and for PC2
+  #pc2_val <- x[which(grepl("PC_2_", names(x[1:length(x)]), fixed = T))]
+  pc2_val <- x[which(str_detect(colnames(dat), "PC_2_"))]
+  #sample name
+  sample_id2 <- str_remove(names(pc2_val), "PC_2_")
+
+  #double check the sample names match
+  ifelse(identical(sample_id1, sample_id2) == T, 
+        sample_id <- sample_id2,
+        print("Sample ID numbers do not match. Check vector indices."))
+  # put PC1 values and PC2 values together in a data fram with sample names 
+  win_pca <- data.frame(PC1 = pc1_val, PC2 = pc2_val, vcf_sample_name = sample_id)
+  #create lgical vector matching sample names to species from Capsella list
+  #species <- Capsella_WGS_Sample_List$sample_name %in% win_pca$sample
+  
+  #create map for sampple name to species
+  #map <- unique(Capsella_WGS_Sample_List[species, c("sample_name","species")])
+  
+  # join the map key; it should not matter if it is left, right, or both join here since both should only have the number of samples
+  df <- left_join(win_pca, sample_info)
+  #return the whole df
+  df2 <- df[,c("vcf_sample_name","PC1", "PC2", "species", "k3population")]
+  #return(df)
+  return(df2)
+}
+```
+
+
+Now I apply the function to each row so each row (representing the results from a window) are each in a data frame stored in a list.
+```{r}
+# apply data reformatting function to output
+lpca9 <- apply(eigen9, 1, reform_map, dat = eigen9)
+```
+
+Pivot longer to plot them all at once
+```{r}
+lpca9_long <- bind_rows(lpca9, .id = "window")
+```
+
+fill in NA for population
+```{r}
+lpca9_long$k3population <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
+
+lpca9_long$window <- factor(lpca9_long$window, levels = 1:20)
+
+```
+
+Plot please
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=lpca9_long, aes(x=PC1, y=PC2, color = species, shape= k3population), size = 3) +
+  theme_bw() + facet_wrap(~window)
+
+pc_plot1
+
+ggsave("lostruct_pca_scf9.png", pc_plot1, width = 10, height = 6, units = "in")
+```
+
+
+```{r}
+pc_plot2 <- ggplot() +
+  geom_point(data=lpca9[[2]], aes(x=PC1, y=PC2, color = species), size = 3) +
+  theme_bw()
+
+pc_plot2
+```
+
 #-----------------OLD CODE-----------------
 
 

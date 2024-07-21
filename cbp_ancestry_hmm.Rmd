@@ -25,13 +25,21 @@ To ensure that inferred *C. rubella* ancestry is absent in this group, I will le
 # load vcf meta data
 vcf_dat <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_vcf_metadata.txt", sep = "\t", header = T)
 
+# load data about individuals actuallt remaining in VCF
+vcf_samp <- read.csv("~/Documents/PhD/Research/vcf_filtering/individuals/j19_in_vcf.txt",
+                     sep = "\t",
+                     header = F)
+
+# join with individuals in the VCF
+in_vcf <- left_join(vcf_samp, vcf_dat, join_by("V1" == "vcf_sample_name"))
+
 # select Capsella rubella from VCF
-cr <- vcf_dat[which(vcf_dat$species == "Capsella rubella"), "vcf_sample_name"]
+cr <- in_vcf[which(in_vcf$species == "Capsella rubella"), "V1"]
 # make population column
 cr <- data.frame(sample = cr, pop = "0")
 
 # select NYC C. bursa-pastoris from VCF file
-nyc <- vcf_dat[which(vcf_dat$citation == "R.Panko"),"vcf_sample_name"]
+nyc <- in_vcf[which(in_vcf$citation == "R.Panko"),"V1"]
 
 ### Load ancestral range population file
 anc_pops <- read.csv("~/Documents/PhD/Research/capsella_population_structure/cbp_pop_str.txt", header = T, sep = "\t")
@@ -47,11 +55,11 @@ other_cbp <- anc_pops[which(anc_pops$k3population != "E_Asia"),"vcf_sample_name"
 
 The NYC samples along with other C. bursa-pastoris will have their local ancestry evaluated so those will be "admixed. I will also set a random 5 from a_cbp to be admixed
 ```{r}
-# combine nyc, other cbp and call them admixed
-q_cbp <- data.frame(sample = c(nyc, other_cbp), pop = "admixed") # q stands for query
+# combine nyc, other cbp and call them admixed, duplicated NYC samples
+q_cbp <- data.frame(sample = other_cbp, pop = "admixed") # q stands for query
 
 # select 5 random
-tst <-sample.int(33, 5, replace = F)
+tst <-sample.int(nrow(a_cbp), 5, replace = F)
 # set pop to admixed
 a_cbp[tst,"pop"] <- "admixed"
 ```

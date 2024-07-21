@@ -147,6 +147,26 @@ nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = c("NY", "NJ"))
 ggsave(paste0(temp_plotdir,"ny_viterbi_all2.png"),nyc_allc, units = "in", height = 12, width = 19)
 ```
 
+```{r nyc_introgression_plot_allScaffolds}
+neu_allc <- viterbi_columns_plot_allChr(vit_all, population = c("N_Europe"))
+
+# why is the order wrong >:(
+ggsave(paste0(temp_plotdir,"neu_viterbi_all2.png"),neu_allc, units = "in", height = 12, width = 19)
+```
+
+```{r nyc_introgression_plot_allScaffolds}
+mena_allc <- viterbi_columns_plot_allChr(vit_all, population = c("MENA"))
+
+# why is the order wrong >:(
+ggsave(paste0(temp_plotdir,"mena_viterbi_all2.png"),mena_allc, units = "in", height = 12, width = 19)
+```
+
+```{r nyc_introgression_plot_allScaffolds}
+easia_allc <- viterbi_columns_plot_allChr(vit_all, population = c("E_Asia"))
+
+# why is the order wrong >:(
+ggsave(paste0(temp_plotdir,"easia_viterbi_all2.png"),easia_allc, units = "in", height = 12, width = 19)
+```
 ###### Introgression .bed files
 To use this tool, I need a bed file of introgressed regions for each sample separately.
 
@@ -395,7 +415,7 @@ c_inter <- list(nyc_inter[,c("chrom","start","end","num","population")],neu_inte
 Attempt to generate plot?
 ```{r}
 #withggnewscale and scico color pallets
-ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, scales = "free", nrow = 2, ncol=4) + coord_flip() +
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, scales = "free", nrow =2, ncol = 4) + coord_flip() +
   theme_bw()+
   geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
   scale_color_scico(palette = 'lapaz', direction = -1) +
@@ -406,7 +426,61 @@ ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, s
   geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
   scale_color_scico(palette = 'lajolla', direction = -1)
 
-ggsave("~/Desktop/test_plot4.png", width = 11, height = 5)
+#ggsave("~/Desktop/test_plot4.png", width = 11, height = 5)
+```
+Last attempt but with widows in the backgroud
+```{r}
+# breakpoints for shading
+row_sind <- seq(from = 1, to = nrow(sc9), by = 3000)
+row_eind <- c(seq(from = 1, to = nrow(sc9), by = 3000)-1)[2:length(row_sind)]
+breaks <- data.frame(start = row_sind[-21], end = row_eind) #rows for extracting bp positions from names
+
+#bp positions
+bp_ends <- as.numeric(str_remove(rownames(sc9)[breaks$end], "jlSCF_9_"))
+bp_beg <- as.numeric(str_remove(rownames(sc9)[breaks$start], "jlSCF_9_"))
+
+breaks <- data.frame(start = bp_beg, end = bp_ends)
+
+# adding geoms
+geom_rect(data = breaks,
+            aes(xmin = start,
+                xmax = end,
+                ymin = - Inf,
+                ymax = Inf),
+            alpha = 0.5,
+            fill = "#a9ba9d")
+
+base <- ggplot() + geom_rect(data = breaks,
+            aes(xmin = start,
+                xmax = end,
+                ymin = - Inf,
+                ymax = Inf),
+            alpha = 0.5,
+            fill = "#a9ba9d")
+
+# only scaffold 9 for now
+apply(c_inter, FUN=filter(chrom == "jlSCF_9"))
+
+c_inter[[4]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_9")
+c_inter[[5]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_9")
+c_inter[[6]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_9")
+
+```
+
+```{r}
+#withggnewscale and scico color pallets and windows indicated
+ggplot() + theme_bw()+
+  coord_flip() +
+  geom_linerange(data = c_inter[[4]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lapaz', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[5]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'bamako', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[6]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1) +
+  ggtitle("Scaffold 9")
+ggsave("~/Desktop/scaffold9_windows.png", width = 5, height = 5)
 ```
 
 As mentioned above, I can look at different combination of regions. However, the set math works best when the list
