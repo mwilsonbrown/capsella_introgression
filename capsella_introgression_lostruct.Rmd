@@ -29,27 +29,24 @@ wgs <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Ca
 #load C. bursa-pastoris population information
 k3pops <- read.csv("~/Documents/PhD/Research/capsella_population_structure/cbp_pop_str.txt", header = T, sep = "\t")
 
-# ATM I do not have nyc samples in here so I will temporarily add them
-nyc_pops <- wgs[which(wgs$citation == "R.Panko"), c("vcf_sample_name", "sample_name", "state", "latitude", "longitude", "latlong_approx")]
+# mutate another column that separates NY and NJ from the rest of the populations
+ny_names <- wgs[which(wgs$citation == "R.Panko"),"vcf_sample_name"]
 
-# change state column name to match pops df
-colnames(nyc_pops)[3] <- "k3population"
-
-# join data frames
-pops <- rbind(k3pops, nyc_pops)
+k3pops <- k3pops %>% mutate(k3pop_sm = case_when(vcf_sample_name %in% ny_names ~ "NYC",
+                                                      .default = k3population))
 ```
 
 Join and keep only necessary information
 ```{r}
 # join vcf data and population output from capsella_population_def
-sample_info <- left_join(wgs, pops)
+sample_info <- left_join(wgs, k3pops)
 ```
 
 ```{r}
 # load matrix format of VCF
 # geno <- read.csv("~/Documents/PhD/Research/capsella_introgression/test_ahmm_vcf.output", sep = "\t", header = F, na.strings = ".") #recode dots as NA
 
-cbpcr <- read.vcfR("~/Desktop/ahmm_pruned_all.vcf.gz", verbose = TRUE)
+cbpcr <- read.vcfR("~/Desktop/ahmm_pruned_capsella.vcf.gz", verbose = TRUE)
 # extract genotype matrix from vcfR object; This takes a hot second
 gt <- extract.gt(cbpcr, element = 'GT', as.numeric = TRUE)
 #gt2 <- extract.gt(cbpcr, element = 'GT', as.numeric = FALSE)
@@ -163,16 +160,10 @@ reform_map <- function(x, dat){
         print("Sample ID numbers do not match. Check vector indices."))
   # put PC1 values and PC2 values together in a data fram with sample names 
   win_pca <- data.frame(PC1 = pc1_val, PC2 = pc2_val, vcf_sample_name = sample_id)
-  #create lgical vector matching sample names to species from Capsella list
-  #species <- Capsella_WGS_Sample_List$sample_name %in% win_pca$sample
-  
-  #create map for sampple name to species
-  #map <- unique(Capsella_WGS_Sample_List[species, c("sample_name","species")])
-  
   # join the map key; it should not matter if it is left, right, or both join here since both should only have the number of samples
   df <- left_join(win_pca, sample_info)
   #return the whole df
-  df2 <- df[,c("vcf_sample_name","PC1", "PC2", "species", "k3population")]
+  df2 <- df[,c("vcf_sample_name","PC1", "PC2", "species", "k3population", "k3pop_sm")]
   #return(df)
   return(df2)
 }
@@ -192,21 +183,32 @@ lpca9_long <- bind_rows(lpca9, .id = "window")
 
 fill in NA for population
 ```{r}
-lpca9_long$k3population <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
+# lpca9_long$k3population <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
+# lpca9_long$k3pop_sm <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
 
-lpca9_long$window <- factor(lpca9_long$window, levels = 1:20)
+lpca9_long <- lpca9_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+```
 
+Make windows factors easily
+```{r}
+lpca9_long$window <- factor(lpca9_long$window, levels = 1:length(unique(lpca9_long$window)))
 ```
 
 Plot please
 ```{r}
+# species colors
+#sp.cols <- c("Capsella bursa-pastoris = "#6D9636", rubella = "#FFCCFD", heterozygous = "#96938E")
+```
+
+
+```{r}
 pc_plot1 <- ggplot() +
-  geom_point(data=lpca9_long, aes(x=PC1, y=PC2, color = species, shape= k3population), size = 3) +
+  geom_point(data=lpca9_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
   theme_bw() + facet_wrap(~window)
 
 pc_plot1
 
-ggsave("lostruct_pca_scf9.png", pc_plot1, width = 10, height = 6, units = "in")
+ggsave("lostruct_pca_scf9_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
 ```
 
 
