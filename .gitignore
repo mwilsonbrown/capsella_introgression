@@ -6,6 +6,7 @@ temp_plots/
 bed_files/
 old_bed_files/
 alt_plots_temp/
+old_ahmm_output/
 ahmm_output/
 *.vcf
 *.vcf.gz

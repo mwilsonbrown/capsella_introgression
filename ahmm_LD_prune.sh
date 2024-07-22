@@ -73,6 +73,7 @@ plink2 --vcf "$VCF" \
   --missing variant-only vcols=chrom,pos,nmiss,nobs,fmiss \
   --allow-extra-chr \
   --double-id \
+  --set-all-var-ids @:# \
   --out as_missing
 
 # Combine variant missing files; remove those with high missing frequency, write new sites to file
@@ -85,8 +86,8 @@ plink2 --vcf "$VCF" \
 # purge and load modules
 module purge
 ml BCFtools/1.19-GCC-13.2.0
-# use bcftools to select only sites in keep_sites file
-bcftools view --targets-file keep_filt_sites.txt $VCF \
+# use bcftools to select only sites in keep_sites file; also prune NP here
+bcftools view --targets-file keep_filt_sites.txt --samples ^ERR2990308.sam $VCF \
   -Ov -o "$OUTDIR"/ahmm_pruned_all.vcf
 
 # convert VCF to Ancestry HMM input format

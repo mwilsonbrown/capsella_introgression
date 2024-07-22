@@ -102,8 +102,9 @@ python3 vcf2ahmm.py -v fst_analysis/pruned_CbpCr_Cbp_.recode.vcf -s hmm_sample_m
 ```{bash, eval=FALSE}
 #cbp is ancestry 1, cr is ancestry 0
 ancestry_hmm \
-  -i ahmm_input.txt \
-  -s ahmm.ploidy \
+  -v \
+  -i ahmm_formated.input \
+  -s ahmm_formated.ploidy \
   -a 2 0.3 0.7 \
   -p 0 -50000 -0.3 \
   -p 1 -350000 -0.7

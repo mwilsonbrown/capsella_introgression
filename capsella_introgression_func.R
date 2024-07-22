@@ -16,7 +16,7 @@ bed_files <- "~/Documents/PhD/Research/capsella_introgression/bed_files/"
 ##### Data Wrangling-------
 bed_by_sample <- function(df, anc, population, outdir){
   # select specified ancestry paths
-  tracts <- df[which(df$k3population %in% population & df$ancestry == anc),]
+  tracts <- df[which(df$k3pop_sm %in% population & df$ancestry == anc),]
   # select only useful columns
   temp <- tracts[,c("vcf_sample_name","chrom","start","end", "ancestry")]
   
@@ -29,7 +29,7 @@ bed_by_sample <- function(df, anc, population, outdir){
   })
   
   # simplify ancestry name if NY and NJ provided
-  ifelse(length(population > 1), population <- population[1])
+  #ifelse(length(population > 1), population <- population[1])
   
   # write each to file
   for(i in 1:length(by_sample)){
@@ -37,7 +37,7 @@ bed_by_sample <- function(df, anc, population, outdir){
                 paste0(outdir, #output directory
                        paste(names(by_sample)[i], #IDs
                              population,
-                             ancestry, 
+                             anc, 
                              sep = "_"),
                        ".bed"), #file suffix
                 col.names = F, quote = F, row.names = F, sep = "\t")
@@ -49,7 +49,7 @@ bed_by_sample <- function(df, anc, population, outdir){
 ###### Plotting Functions--------
 # Viterbi decoded ancestry columns plot for a single scaffold
 viterbi_columns_plot <- function(df, scaffold_num, population){
-  pl <- ggplot() + geom_segment(data = subset(df, (chrom == paste0("jlSCF_", scaffold_num) & k3population %in% population)),
+  pl <- ggplot() + geom_segment(data = subset(df, (chrom == paste0("jlSCF_", scaffold_num) & k3pop_sm %in% population)),
                           aes(color= ancestry, x=sample_name, xend=sample_name, y=start, yend=end),
                           linewidth = 8) +
     scale_color_manual(values=anc.cols) +
@@ -64,7 +64,7 @@ viterbi_columns_plot <- function(df, scaffold_num, population){
 }
 
 viterbi_columns_plot_allChr <- function(df, population){
-  pl <- ggplot() + geom_segment(data = subset(df, k3population %in% population),
+  pl <- ggplot() + geom_segment(data = subset(df, k3pop_sm %in% population),
                                 aes(color= ancestry, x=sample_name, xend=sample_name, y=start, yend=end),
                                 linewidth = 8) +
     facet_grid(~chrom, scales = "free_y") +
