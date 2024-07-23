@@ -118,7 +118,7 @@ scf_ls <- list(sc9,sc10,sc11,sc12,sc13,sc14,sc15,sc16)
 ```{r}
 # calculate eigenvals and vecs for windows of size 3000 bp on scaffold 9
 eigen9 <- lostruct::eigen_windows(data = sc9,
-              win = 3000,
+              win = 1000,
               k=2)
 eigen10 <- lostruct::eigen_windows(data = sc10,
               win = 1000,
@@ -218,6 +218,68 @@ pc_plot2 <- ggplot() +
   theme_bw()
 
 pc_plot2
+```
+
+```{r}
+# apply data reformatting function to output
+lpca10 <- apply(eigen10, 1, reform_map, dat = eigen10)
+```
+
+Pivot longer to plot them all at once
+```{r}
+lpca10_long <- bind_rows(lpca10, .id = "window")
+```
+
+fill in NA for population
+```{r}
+# lpca10_long$k3population <- tidyr::replace_na(lpca10_long$k3population, "Other Sp.")
+# lpca10_long$k3pop_sm <- tidyr::replace_na(lpca10_long$k3population, "Other Sp.")
+
+lpca10_long <- lpca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+```
+
+Make windows factors easily
+```{r}
+lpca10_long$window <- factor(lpca10_long$window, levels = 1:length(unique(lpca10_long$window)))
+```
+
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=lpca10_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  theme_bw() + facet_wrap(~window)
+
+pc_plot1
+
+ggsave("lostruct_pca_scf10_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
+```
+Single window at a time blown up
+```{r}
+sc10w34 <- ggplot() +
+  geom_point(data=subset(lpca10_long, window == 34), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  theme_classic() + facet_wrap(~window)
+
+sc10w34
+
+ggsave("lostruct_pca_scf10_window34.png", sc10w34, width = 10, height = 6, units = "in")
+```
+
+```{r}
+sc10w10 <- ggplot() +
+  geom_point(data=subset(lpca10_long, window == 10), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  theme_classic() + facet_wrap(~window)
+
+sc10w10
+
+ggsave("lostruct_pca_scf10_window10.png", sc10w10, width = 10, height = 6, units = "in")
+```
+
+```{r}
+sc10w12 <- ggplot() +
+  geom_point(data=subset(lpca10_long, window == 12
+                         ), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  theme_classic() + facet_wrap(~window)
+
+ggsave("lostruct_pca_scf10_window12.png", sc10w12, width = 10, height = 6, units = "in")
 ```
 
 #-----------------OLD CODE-----------------

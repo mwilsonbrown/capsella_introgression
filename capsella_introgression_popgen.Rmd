@@ -108,7 +108,7 @@ tl_dist <- ggplot() +
   facet_grid(chrom~ancestry, scales = "free") +
   theme(legend.position = "none")
 tl_dist
-#ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 7, height = 5)
+ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 7, height = 5)
 ```
 Most tracts are short, and bursa-pastoris tracts are on average, longer than others. Heterozygous tracts are the shortest.
 # Introgression Plots
@@ -156,7 +156,7 @@ ggsave(paste0(temp_plotdir,"mena_viterbi_all4.png"),mena_allc, units = "in", hei
 ```{r nyc_introgression_plot_allScaffolds}
 easia_allc <- viterbi_columns_plot_allChr(vit_all, population = c("E_Asia"))
 
-ggsave(paste0(temp_plotdir,"easia_viterbi_all4.png"),easia_allc, units = "in", height = 12, width = 19)
+ggsave(paste0(temp_plotdir,"easia_viterbi_all4.png"),easia_allc, units = "in", height = 5, width = 5)
 ```
 
 
@@ -242,8 +242,8 @@ Let's take a look at the output
 nyc_inter <- read.csv(paste0("~/Documents/PhD/Research/capsella_introgression/nyc_multiinter_rubella.txt"), header = T, sep = "\t")
 
 # You can pass sample names to BEDtools but I will just fix them here
-colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
-colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "_NY_rubella.bed") #remove other info
+colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "X") #remove directory info
+colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "_NYC_rubella.bed") #remove other info
 
 # relevel factors
 nyc_inter$chrom <- factor(nyc_inter$chrom, levels = paste0("jlSCF_", 9:16))
@@ -256,7 +256,7 @@ nyc_inter$chrom <- factor(nyc_inter$chrom, levels = paste0("jlSCF_", 9:16))
 
 ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_x_discrete(labels = paste0("chr ", 9:16)) + scale_color_scico(palette = 'acton', direction = -1) + theme_classic() + labs(title = "New York introgressed region frequency", colour = "individuals", x = NULL, y = "position")
 
-#ggsave(paste0(temp_plotdir,"nyc_introgressed_freq.png"), units = "in", height = 12, width = 12)
+ggsave(paste0(temp_plotdir,"nyc_introgressed_freq.png"), units = "in", height = 12, width = 12)
 ```
 
 Let's look at the distributions of individuals that share chunks for each scaffold to get a better idea of how common is common for each scaffold.
@@ -270,8 +270,8 @@ Now again with the Mediterranean samples
 # load file
 mena_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/mena_multiinter_rubella.txt")
 # You can pass sample names to BEDtools but I will just fix them here
-colnames(mena_inter) <- str_remove(colnames(mena_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
-colnames(mena_inter) <- str_remove(colnames(mena_inter), "_NY_rubella.bed") #remove other info
+colnames(mena_inter) <- str_remove(colnames(mena_inter), "X") #remove directory info
+colnames(mena_inter) <- str_remove(colnames(mena_inter), "_MENA_rubella.bed") #remove other info
 
 # relevel factors
 mena_inter$chrom <- factor(mena_inter$chrom, levels = paste0("jlSCF_", 9:16))
@@ -282,7 +282,7 @@ mena_inter$chrom <- factor(mena_inter$chrom, levels = paste0("jlSCF_", 9:16))
 # gradient plot where darker colors mean more individuals share an introgressed chunk
 ggplot() + geom_segment(data = mena_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + theme_classic() + scale_x_discrete(labels = paste0("chr ", 9:16)) + labs(title = "Middle East and Mediterranean introgressed region frequency", colour = "individuals", x = NULL, y = "position")
 
-#ggsave(paste0(temp_plotdir,"mena_introgressed_freq.png"), units = "in", height = 12, width = 12)
+ggsave(paste0(temp_plotdir,"mena_introgressed_freq.png"), units = "in", height = 12, width = 12)
 ```
 I will plot the N. European separately just for posterity but I am really more interested in the shared and private regions.
 
@@ -290,7 +290,7 @@ I will plot the N. European separately just for posterity but I am really more i
 # load file
 neu_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/neu_multiinter_rubella.txt")
 # You can pass sample names to BEDtools but I will just fix them here
-colnames(neu_inter) <- str_remove(colnames(neu_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
+colnames(neu_inter) <- str_remove(colnames(neu_inter), "X") #remove directory info
 colnames(neu_inter) <- str_remove(colnames(neu_inter), "_N_Europe_rubella.bed") #remove other info
 
 # relevel factors
@@ -302,7 +302,7 @@ neu_inter$chrom <- factor(neu_inter$chrom, levels = paste0("jlSCF_", 9:16))
 # gradient plot where darker colors mean more individuals share an introgressed chunk
 ggplot() + geom_segment(data = neu_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + theme_classic() + scale_x_discrete(labels = paste0("chr ", 9:16)) + labs(title = "N. Eurasian introgressed region frequency", colour = "individuals", x = NULL, y = "position")
 
-#ggsave(paste0(temp_plotdir,"mena_introgressed_freq.png"), units = "in", height = 12, width = 12)
+ggsave(paste0(temp_plotdir,"neu_introgressed_freq.png"), units = "in", height = 12, width = 12)
 ```
 ##### MultiInter by K4 group
 An easy way to figure out which regions are shared by all of the groups and private to each group is to do the multi-inter analysis on all of the capsella bursa-pastoris in the European lineage.
@@ -312,13 +312,13 @@ An easy way to figure out which regions are shared by all of the groups and priv
 all_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/all_multiinter_rubella.txt")
 
 # You can pass sample names to BEDtools but I will just fix them here
-colnames(all_inter) <- str_remove(colnames(all_inter), "X.mnt.scratch.wils1582.bed_files.") #remove directory info
+colnames(all_inter) <- str_remove(colnames(all_inter), "X") #remove directory info
 
 # column names to match individuals to numbers in small multi-inter df
 all_names <- colnames(all_inter[6:length(colnames(all_inter))])
 
 # save indices for each population
-nyc_indx <- which(grepl( "NY_rubella.bed", all_names, fixed = TRUE))
+nyc_indx <- which(grepl( "NYC_rubella.bed", all_names, fixed = TRUE))
 neu_indx <- which(grepl( "N_Europe_rubella.bed", all_names, fixed = TRUE))
 mena_indx <- which(grepl( "MENA_rubella.bed", all_names, fixed = TRUE))
 ```
@@ -333,7 +333,7 @@ ggplot() + geom_histogram(data = all_inter[,1:4], binwidth = 5, aes(x=num)) + fa
 ##### High Frequency shared regions
 ```{r}
 #regions shared by all
-all_inter[which(all_inter$num == 100), 1:4]
+all_inter[which(all_inter$num == 101), 1:4]
 ```
 
 
@@ -443,6 +443,11 @@ Attempt to indicate windows corresponding to Lostruct analysis
 c_inter[[4]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_9")
 c_inter[[5]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_9")
 c_inter[[6]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_9")
+
+# only scaffold 9 for now
+c_inter[[7]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_10")
+c_inter[[8]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_10")
+c_inter[[9]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_10")
 ```
 
 ```{r}
@@ -467,13 +472,13 @@ The way the Lostruct eigen windows function works is that the win argument consi
 I want to align those SNP positions with BP positions for the plot above
 ```{r}
 # Just generate df indicating window start and end row numbers
-row_sind <- seq(from = 1, to = nrow(sc9), by = 3000)
-row_eind <- c(seq(from = 1, to = nrow(sc9), by = 3000)-1)[2:length(row_sind)]
-winds <- data.frame(start = row_sind[-21], end = row_eind) #rows for extracting bp positions from names
+row_sind <- seq(from = 1, to = nrow(sc10), by = 1000)
+row_eind <- c(seq(from = 1, to = nrow(sc10), by = 1000)-1)[2:length(row_sind)]
+winds <- data.frame(start = row_sind[-38], end = row_eind) #rows for extracting bp positions from names
 
 # from the row names, get the staring and ending bp positions
-bp_ends <- as.numeric(str_remove(rownames(sc9)[breaks$end], "jlSCF_9_"))
-bp_beg <- as.numeric(str_remove(rownames(sc9)[breaks$start], "jlSCF_9_"))
+bp_ends <- as.numeric(str_remove(rownames(sc10)[winds$end], "jlSCF_10_"))
+bp_beg <- as.numeric(str_remove(rownames(sc10)[winds$start], "jlSCF_10_"))
 
 breaks <- data.frame(start = bp_beg, end = bp_ends)
 ```
@@ -501,22 +506,22 @@ ggplot() +
   theme_classic() +
   theme(axis.text.x = element_text(size = 4), legend.position = "none") +
   geom_rect(data = breaks,
-            aes(ymin = start[18],
-                ymax = end[18],
+            aes(ymin = start[12],
+                ymax = end[12],
                 xmin = - Inf,
                 xmax = Inf),
             alpha = 0.5,
             fill = "#a9ba9d") +
-  geom_linerange(data = c_inter[[4]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  geom_linerange(data = c_inter[[7]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_scico(palette = 'lapaz', direction = -1) +
   new_scale_color() + 
-  geom_linerange(data = c_inter[[5]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  geom_linerange(data = c_inter[[8]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_scico(palette = 'bamako', direction = -1) +
   new_scale_color() + 
-  geom_linerange(data = c_inter[[6]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  geom_linerange(data = c_inter[[9]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_scico(palette = 'lajolla', direction = -1)
 
-ggsave("~/Desktop/scaffold9_window18.png", width = 5, height = 2)
+ggsave("~/Desktop/scaffold10_window12.png", width = 5, height = 2)
 ```
 What about all of them?
 ```{r}
