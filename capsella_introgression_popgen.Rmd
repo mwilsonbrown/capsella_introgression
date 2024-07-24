@@ -136,21 +136,21 @@ ggsave(paste0(temp_plotdir, "easia_viterbi_SCF16_new.png"), easian_16, units = "
 nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = "NYC")
 
 # why is the order wrong >:(
-ggsave(paste0(temp_plotdir,"ny_viterbi_all4.png"),nyc_allc, units = "in", height = 12, width = 19)
+ggsave(paste0(temp_plotdir,"ny_viterbi_all4.png"),nyc_allc, units = "in", height = 5, width = 14)
 ```
 
 ```{r nyc_introgression_plot_allScaffolds}
 neu_allc <- viterbi_columns_plot_allChr(vit_all, population = c("N_Europe"))
 
 # why is the order wrong >:(
-ggsave(paste0(temp_plotdir,"neu_viterbi_all4.png"),neu_allc, units = "in", height = 12, width = 19)
+ggsave(paste0(temp_plotdir,"neu_viterbi_all4.png"),neu_allc, units = "in", height = 5, width = 10)
 ```
 
 ```{r nyc_introgression_plot_allScaffolds}
 mena_allc <- viterbi_columns_plot_allChr(vit_all, population = c("MENA"))
 
 # why is the order wrong >:(
-ggsave(paste0(temp_plotdir,"mena_viterbi_all4.png"),mena_allc, units = "in", height = 12, width = 19)
+ggsave(paste0(temp_plotdir,"mena_viterbi_all4.png"),mena_allc, units = "in", height = 5, width = 6.7)
 ```
 
 ```{r nyc_introgression_plot_allScaffolds}
@@ -254,9 +254,9 @@ nyc_inter$chrom <- factor(nyc_inter$chrom, levels = paste0("jlSCF_", 9:16))
 # gradient plot where darker colors mean more individuals share an introgressed chunk
 # ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
 
-ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_x_discrete(labels = paste0("chr ", 9:16)) + scale_color_scico(palette = 'acton', direction = -1) + theme_classic() + labs(title = "New York introgressed region frequency", colour = "individuals", x = NULL, y = "position")
+ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=start, xend=end, y=chrom, yend=chrom), linewidth = 10) + scale_y_discrete(labels = paste0("chr ", 9:16)) + scale_color_scico(palette = 'acton', direction = -1) + theme_classic() + labs(title = "New York introgressed region frequency", colour = "individuals", x = NULL, y = "position")
 
-ggsave(paste0(temp_plotdir,"nyc_introgressed_freq.png"), units = "in", height = 12, width = 12)
+ggsave(paste0(temp_plotdir,"nyc_introgressed_freq.png"), units = "in", height = 6, width = 12)
 ```
 
 Let's look at the distributions of individuals that share chunks for each scaffold to get a better idea of how common is common for each scaffold.
@@ -385,18 +385,18 @@ test4 <- split(test3, test3$population)
 ```{r}
 #withggnewscale
 ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, scales = "free", nrow = 8) + coord_flip() +
-  geom_linerange(data = test4[[1]], linewidth = 5, aes(color = num)) +
-  scale_color_gradientn(colors = c('#99000d', '#fee5d9')) +
+  geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_scico("acton", direction=-1) +
   new_scale_color() + 
-  geom_linerange(data = test4[[2]], linewidth = 5, aes(color = num)) +
-  scale_color_gradientn(colors = c('#084594', '#4292c6')) +
+  geom_linerange(data = c_inter[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = light.brown) +
   new_scale_color() + 
-  geom_linerange(data = test4[[3]], linewidth = 5, aes(color = num)) +
-  scale_color_gradientn(colors = c('mediumorchid4', 'lightpink'))
+  geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = greens)
 
 ggsave("~/Desktop/test_plot2.png", width = 5, height = 11)
 ```
-As mentioned above, it is actually more intitituve to me and beneficial to have each population on their own number scale. I will achieve that by joining the dfs?
+As mentioned above, it is actually more intuitive to me and beneficial to have each population on their own number scale. I will achieve that by joining the dfs?
 
 ```{r}
 # add population indicators to all
@@ -425,7 +425,7 @@ ggplot(mapping = aes(x=population, ymin=start, ymax=end)) +
   theme(axis.text.x = element_text(size = 4), legend.position = "right") + 
   labs(colour = "NYC Metro\nindividuals") +
   geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
-  scale_color_scico(palette = 'lapaz', direction = -1) +
+  scale_color_scico(palette = 'acton', direction = -1) +
   new_scale_color() +
   geom_linerange(data = c_inter[[2]], linewidth = 5, aes(color = num)) +
   scale_color_scico(palette = 'bamako', direction = -1) +
@@ -435,8 +435,34 @@ ggplot(mapping = aes(x=population, ymin=start, ymax=end)) +
   geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
   scale_color_scico(palette = 'lajolla', direction = -1)
 
-ggsave("~/Desktop/introgression_plot_allscf_legend_side.png", width = 11, height = 5.5)
+#ggsave("~/Desktop/introgression_plot_allscf_legend_side.png", width = 11, height = 5.5)
 ```
+With different colors
+```{r}
+#withggnewscale and scico color pallets
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + 
+  facet_wrap(~chrom, scales = "free", nrow =2, ncol = 4,
+             labeller = labeller(chrom = pretty_chrom)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 4), legend.position = "bottom") + 
+  labs(colour = "NYC Metro\nindividuals") +
+  geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'acton', direction = -1) +
+  new_scale_color() +
+  geom_linerange(data = c_inter[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = greens) +
+  labs(colour = "N. Eurasia\nindividuals") +
+  new_scale_color() + 
+  labs(colour = "Mediterranean\nindividuals") +
+  geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = light.brown)
+
+ggsave("~/Desktop/introgression_plot_allscf_legend_bottom_new_colors.png", width = 11, height = 5.5)
+```
+
+
+
 Attempt to indicate windows corresponding to Lostruct analysis
 ```{r}
 # only scaffold 9 for now
@@ -444,10 +470,16 @@ c_inter[[4]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_9")
 c_inter[[5]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_9")
 c_inter[[6]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_9")
 
-# only scaffold 9 for now
+# only scaffold 10 for now
 c_inter[[7]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_10")
 c_inter[[8]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_10")
 c_inter[[9]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_10")
+
+# only scaffold 14
+inter14 <- list()
+inter14[[1]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_14")
+inter14[[2]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_14")
+inter14[[3]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_14")
 ```
 
 ```{r}
@@ -472,13 +504,13 @@ The way the Lostruct eigen windows function works is that the win argument consi
 I want to align those SNP positions with BP positions for the plot above
 ```{r}
 # Just generate df indicating window start and end row numbers
-row_sind <- seq(from = 1, to = nrow(sc10), by = 1000)
-row_eind <- c(seq(from = 1, to = nrow(sc10), by = 1000)-1)[2:length(row_sind)]
-winds <- data.frame(start = row_sind[-38], end = row_eind) #rows for extracting bp positions from names
+row_sind <- seq(from = 1, to = nrow(sc14), by = 1000)
+row_eind <- c(seq(from = 1, to = nrow(sc14), by = 1000)-1)[2:length(row_sind)]
+winds <- data.frame(start = row_sind[-51], end = row_eind) #rows for extracting bp positions from names
 
 # from the row names, get the staring and ending bp positions
-bp_ends <- as.numeric(str_remove(rownames(sc10)[winds$end], "jlSCF_10_"))
-bp_beg <- as.numeric(str_remove(rownames(sc10)[winds$start], "jlSCF_10_"))
+bp_ends <- as.numeric(str_remove(rownames(sc14)[winds$end], "jlSCF_14_"))
+bp_beg <- as.numeric(str_remove(rownames(sc14)[winds$start], "jlSCF_14_"))
 
 breaks <- data.frame(start = bp_beg, end = bp_ends)
 ```
@@ -530,21 +562,20 @@ ggplot() +
   coord_flip() + 
   theme_classic() +
   theme(axis.text.x = element_text(size = 4), legend.position = "none") +
-  geom_rect(data = breaks,
+  geom_rect(data = subset(seg_nyc_only, chrom == "jlSCF_14"),
             aes(ymin = start,
                 ymax = end,
                 xmin = - Inf,
                 xmax = Inf),
             alpha = 0.5,
             fill = "#a9ba9d") +
-  geom_hline(data = breaks, aes(yintercept = end, linetype = "dotted")) +
-  geom_linerange(data = c_inter[[4]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  geom_linerange(data = inter14[[1]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_scico(palette = 'lapaz', direction = -1) +
   new_scale_color() + 
-  geom_linerange(data = c_inter[[5]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  geom_linerange(data = inter14[[2]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_scico(palette = 'bamako', direction = -1) +
   new_scale_color() + 
-  geom_linerange(data = c_inter[[6]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  geom_linerange(data = inter14[[3]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_scico(palette = 'lajolla', direction = -1)
   
 ```
@@ -625,13 +656,13 @@ seg_nj_neu <- all_stat %>%
    filter(!(if_any(c(nj_status, neu_status), is.na)) & is.na(mena_status))
 
 # only in NJ (of which NY is inclusive)
-seg_nj <- all_stat %>%
-   filter(!is.na(nj_status) & if_all(c(neu_status, mena_status), is.na))
+#seg_nj <- all_stat %>%
+   #filter(!is.na(nj_status) & if_all(c(neu_status, mena_status), is.na))
 
 # private to NJ (not found elsewhere in NY)
-seg_nj[which(seg_nj$num == 3),]
+seg_nj[which(seg_nj$num <= 3),]
 ```
-There is only `r nrow(seg_nj)` region present in NJ and not found elsewhere in the NYC group, nor is it found in other sampled introgressed populations. There are `r nrow(seg_nyc_only)` introgressed regions only found in NYC, that have not been sampled in the MENA nor the N. European population.
+There are `r nrow(seg_nyc_only)` introgressed regions only found in NYC, that have not been sampled in the MENA nor the N. European population.
 
 There are introgressed regions that are only found in NJ and a sample in the Mediterranean population (namely KYRG-3-14, which is index 97 in this data): number = `r nrow(which(seg_nyc_mena$num ==4 & seg_nyc_mena$list == c(43,44,45,97)`
 
@@ -642,6 +673,24 @@ seg_nj_neu[107:108,]
 seg_nj_neu[107:108,"end"] - seg_nj_neu[107:108,"start"]
 ```
 4k and 12k bp respectively.
+
+Let's plot NYC only regions:
+```{r}
+nyc_private_hist <- ggplot() + geom_histogram(data = seg_nyc_only, aes(num)) +
+  theme_classic() +
+  xlab("individuals")
+
+ggsave("~/Desktop/nyc_private_hist.png",nyc_private_hist, width = 5, height = 2)
+```
+
+
+```{r}
+nyc_private_vio <- ggplot() + geom_boxplot(data = seg_nyc_only, aes(bp)) +
+  theme_classic()
+
+ggsave("~/Desktop/nyc_private_boxplot.png",nyc_private_vio, width = 5, height = 2)
+```
+
 
 ### Older code
 Want to combine the "everybody" image with frequency image

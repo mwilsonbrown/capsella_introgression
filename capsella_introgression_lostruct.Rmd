@@ -105,6 +105,9 @@ sc12 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_11")))):max(which(str_de
 
 sc13 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_12")))):max(which(str_detect(rownames(gt), "jlSCF_13"))),] #scaffold 13
 sc14 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_13")))):max(which(str_detect(rownames(gt), "jlSCF_14"))),] #scaffold 14
+# remove chromosome from row name
+rownames(sc14) <- as.numeric(str_remove(rownames(sc14), "jlSCF_14_"))
+
 sc15 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_14")))):max(which(str_detect(rownames(gt), "jlSCF_15"))),] #scaffold 15
 sc16 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_15")))):max(which(str_detect(rownames(gt), "jlSCF_16"))),] #scaffold 16
 ```
@@ -124,7 +127,7 @@ eigen10 <- lostruct::eigen_windows(data = sc10,
               win = 1000,
               k=2)
 
-eigen11 <- lostruct::eigen_windows(data = sc11,
+eigen14 <- lostruct::eigen_windows(data = sc14,
               win = 1000,
               k=2)
 ```
@@ -203,8 +206,9 @@ Plot please
 
 ```{r}
 pc_plot1 <- ggplot() +
-  geom_point(data=lpca9_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  theme_bw() + facet_wrap(~window)
+  geom_point(data=subset(lpca9_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
 
 pc_plot1
 
@@ -232,9 +236,6 @@ lpca10_long <- bind_rows(lpca10, .id = "window")
 
 fill in NA for population
 ```{r}
-# lpca10_long$k3population <- tidyr::replace_na(lpca10_long$k3population, "Other Sp.")
-# lpca10_long$k3pop_sm <- tidyr::replace_na(lpca10_long$k3population, "Other Sp.")
-
 lpca10_long <- lpca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
 ```
 
@@ -246,31 +247,37 @@ lpca10_long$window <- factor(lpca10_long$window, levels = 1:length(unique(lpca10
 ```{r}
 pc_plot1 <- ggplot() +
   geom_point(data=lpca10_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  theme_bw() + facet_wrap(~window)
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
 
 pc_plot1
 
-ggsave("lostruct_pca_scf10_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
+#ggsave("lostruct_pca_scf10_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
 ```
 Single window at a time blown up
 ```{r}
 sc10w34 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 34), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  theme_classic() + facet_wrap(~window)
-
+  geom_point(data=subset(lpca10_long, window == 34 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
 sc10w34
 
-ggsave("lostruct_pca_scf10_window34.png", sc10w34, width = 10, height = 6, units = "in")
+ggsave("lostruct_pca_scf10_window34.png", sc10w34, width = 7, height = 5, units = "in")
 ```
 
 ```{r}
 sc10w10 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 10), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  theme_classic() + facet_wrap(~window)
+  geom_point(data=subset(lpca10_long, window == 10 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
 
 sc10w10
 
-ggsave("lostruct_pca_scf10_window10.png", sc10w10, width = 10, height = 6, units = "in")
+ggsave("lostruct_pca_scf10_window10.png", sc10w10, width = 7, height = 5, units = "in")
 ```
 
 ```{r}
@@ -280,6 +287,42 @@ sc10w12 <- ggplot() +
   theme_classic() + facet_wrap(~window)
 
 ggsave("lostruct_pca_scf10_window12.png", sc10w12, width = 10, height = 6, units = "in")
+```
+
+Scaffold 14
+For an example of NYC CBP alone
+
+Prep the data
+
+```{r}
+# apply data reformatting function to output
+lpca14 <- apply(eigen14, 1, reform_map, dat = eigen14)
+```
+
+Pivot longer to plot them all at once
+```{r}
+lpca14_long <- bind_rows(lpca14, .id = "window")
+```
+
+fill in NA for population
+```{r}
+lpca14_long <- lpca14_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+```
+
+Make windows factors easily
+```{r}
+lpca14_long$window <- factor(lpca14_long$window, levels = 1:length(unique(lpca14_long$window)))
+```
+
+```{r}
+plt <- ggplot() +
+  geom_point(data=lpca14_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+plt
+
+ggsave("lostruct_pca_scf14_transparent.png", plt, width = 10, height = 6, units = "in")
 ```
 
 #-----------------OLD CODE-----------------

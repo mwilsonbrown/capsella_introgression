@@ -1,17 +1,43 @@
 # Functions for Capsella population definitions
 # M. Wilson Brown
-# July 10, 2024
+# July 24, 2024
 
+# scratch notes
+light.brown <- c("#f3cea9","#330000")
+greens <- c("#E5FFC5","#002C00")
 ##### Setup In/Out----------
 # another option for pink color is #C5839A; I was using "pink" before (FFC0CB), #E2A2B3, or just 'mistyrose'
 #anc.cols <- c(bursa_pastoris = "#a9ba9d", rubella = "#F1D1D9", heterozygous = "#96938E")
 anc.cols <- c(bursa_pastoris = "#6D9636", rubella = "#FFCCFD", heterozygous = "#96938E")
 # a warm gray or green grey need to be quite dark for it to be appropriate for all forms of colorblindness
 
+species.cols <- c('Capsella\ grandiflora' = "#ffdb58",
+               'Capsella\ rubella' = "#e99a9bff",
+               'Capsella\ orientalis' = "#5d8aa8ff",
+               'Capsella\ bursa-pastoris' = "#96938E",
+               'E_Asia' = "#B2F2FD",
+               'MENA' = "#996330",
+               'N_Europe' = "#7FC55F",
+               'NYC' = "#585380")
+
+# label mapping for figures
+pop.labels <- c('E_Asia' = "E. Asia",
+                'MENA' = "Mediterranean",
+                'N_Europe' = "N. Eurasia",
+                'NYC' = "NYC Metro",
+                'Capsella\ grandiflora' = "C. graniflora",
+                'Capsella\ rubella' = "C. rubella",
+                'Capsella\ orientalis' = "C. orientalis",
+                'Capsella\ bursa-pastoris' = "C. bursa-pastoris")
+
 # paths
 ahmm_vit_path = "~/Documents/PhD/Research/capsella_introgression/ahmm_output/"
 temp_plotdir <- "~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/"
 bed_files <- "~/Documents/PhD/Research/capsella_introgression/bed_files/"
+
+## pretty chromosome names for facets
+pretty_chrom <- paste0("Chr. ", 9:16)
+names(pretty_chrom) <- paste0("jlSCF_", 9:16)
 
 ##### Data Wrangling-------
 bed_by_sample <- function(df, anc, population, outdir){
@@ -67,14 +93,17 @@ viterbi_columns_plot_allChr <- function(df, population){
   pl <- ggplot() + geom_segment(data = subset(df, k3pop_sm %in% population),
                                 aes(color= ancestry, x=sample_name, xend=sample_name, y=start, yend=end),
                                 linewidth = 8) +
-    facet_grid(~chrom, scales = "free_y") +
+    facet_wrap(~chrom, scales = "free",
+               labeller = labeller(chrom = pretty_chrom),
+               nrow = 2) +
     scale_color_manual(values=anc.cols) +
-    ggtitle(paste(population," introgression patterns")) +
+    ggtitle(paste0(population," introgression patterns")) +
     ylab("position") + xlab("Sample Name") +
+    theme_classic() +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
           legend.position = "bottom",
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 10))
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 5))
   return(pl)
 }
