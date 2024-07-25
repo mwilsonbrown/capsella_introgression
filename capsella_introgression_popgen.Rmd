@@ -133,24 +133,23 @@ ggsave(paste0(temp_plotdir, "easia_viterbi_SCF16_new.png"), easian_16, units = "
 
 
 ```{r nyc_introgression_plot_allScaffolds}
-nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = "NYC")
+nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = "NYC", facet.col = "#585380", facet.txt.col = "white")
 
-# why is the order wrong >:(
-ggsave(paste0(temp_plotdir,"ny_viterbi_all4.png"),nyc_allc, units = "in", height = 5, width = 14)
+ggsave(paste0(temp_plotdir,"ny_viterbi_all4.png"),nyc_allc, units = "in", height = 6, width = 14)
 ```
 
 ```{r nyc_introgression_plot_allScaffolds}
-neu_allc <- viterbi_columns_plot_allChr(vit_all, population = c("N_Europe"))
+neu_allc <- viterbi_columns_plot_allChr(vit_all, population = "N_Europe" , facet.col = "#7FC55F", facet.txt.col = "black")
 
 # why is the order wrong >:(
-ggsave(paste0(temp_plotdir,"neu_viterbi_all4.png"),neu_allc, units = "in", height = 5, width = 10)
+ggsave(paste0(temp_plotdir,"neu_viterbi_all4.png"),neu_allc, units = "in", height = 6, width = 10)
 ```
 
 ```{r nyc_introgression_plot_allScaffolds}
-mena_allc <- viterbi_columns_plot_allChr(vit_all, population = c("MENA"))
+mena_allc <- viterbi_columns_plot_allChr(vit_all, population = "MENA", facet.col = "#996330", facet.txt.col = "white")
 
 # why is the order wrong >:(
-ggsave(paste0(temp_plotdir,"mena_viterbi_all4.png"),mena_allc, units = "in", height = 5, width = 6.7)
+ggsave(paste0(temp_plotdir,"mena_viterbi_all4.png"),mena_allc, units = "in", height = 6, width = 6.7)
 ```
 
 ```{r nyc_introgression_plot_allScaffolds}
@@ -504,13 +503,13 @@ The way the Lostruct eigen windows function works is that the win argument consi
 I want to align those SNP positions with BP positions for the plot above
 ```{r}
 # Just generate df indicating window start and end row numbers
-row_sind <- seq(from = 1, to = nrow(sc14), by = 1000)
-row_eind <- c(seq(from = 1, to = nrow(sc14), by = 1000)-1)[2:length(row_sind)]
-winds <- data.frame(start = row_sind[-51], end = row_eind) #rows for extracting bp positions from names
+row_sind <- seq(from = 1, to = nrow(sc10), by = 1000)
+row_eind <- c(seq(from = 1, to = nrow(sc10), by = 1000)-1)[2:length(row_sind)]
+winds <- data.frame(start = row_sind[-38], end = row_eind) #rows for extracting bp positions from names
 
 # from the row names, get the staring and ending bp positions
-bp_ends <- as.numeric(str_remove(rownames(sc14)[winds$end], "jlSCF_14_"))
-bp_beg <- as.numeric(str_remove(rownames(sc14)[winds$start], "jlSCF_14_"))
+bp_ends <- as.numeric(str_remove(rownames(sc10)[winds$end], "jlSCF_10_"))
+bp_beg <- as.numeric(str_remove(rownames(sc10)[winds$start], "jlSCF_10_"))
 
 breaks <- data.frame(start = bp_beg, end = bp_ends)
 ```
@@ -532,28 +531,29 @@ base_med <- ggplot() + geom_rect(data = breaks,
 
 Attemping with all populations
 ```{r}
-# adding geoms
+# Scaffold 10 windows for examples
 ggplot() + 
   coord_flip() + 
   theme_classic() +
+  ggtitle("Chr. 10 Window 34") +
   theme(axis.text.x = element_text(size = 4), legend.position = "none") +
   geom_rect(data = breaks,
-            aes(ymin = start[12],
-                ymax = end[12],
+            aes(ymin = start[34],
+                ymax = end[34],
                 xmin = - Inf,
                 xmax = Inf),
             alpha = 0.5,
-            fill = "#a9ba9d") +
+            fill = "lightgrey") +
   geom_linerange(data = c_inter[[7]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'lapaz', direction = -1) +
+  scale_color_scico(palette = 'acton', direction = -1) +
   new_scale_color() + 
   geom_linerange(data = c_inter[[8]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'bamako', direction = -1) +
+  scale_color_gradientn(colors = greens) +
   new_scale_color() + 
   geom_linerange(data = c_inter[[9]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'lajolla', direction = -1)
+  scale_color_gradientn(colors = light.brown)
 
-ggsave("~/Desktop/scaffold10_window12.png", width = 5, height = 2)
+ggsave("~/Desktop/scaffold10_window34.png", width = 5, height = 2)
 ```
 What about all of them?
 ```{r}
@@ -686,7 +686,8 @@ ggsave("~/Desktop/nyc_private_hist.png",nyc_private_hist, width = 5, height = 2)
 
 ```{r}
 nyc_private_vio <- ggplot() + geom_boxplot(data = seg_nyc_only, aes(bp)) +
-  theme_classic()
+  theme_classic() +
+  xlab("length (base pairs)")
 
 ggsave("~/Desktop/nyc_private_boxplot.png",nyc_private_vio, width = 5, height = 2)
 ```

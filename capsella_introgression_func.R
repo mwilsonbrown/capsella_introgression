@@ -89,8 +89,9 @@ viterbi_columns_plot <- function(df, scaffold_num, population){
   return(pl)
 }
 
-viterbi_columns_plot_allChr <- function(df, population){
-  pl <- ggplot() + geom_segment(data = subset(df, k3pop_sm %in% population),
+viterbi_columns_plot_allChr <- function(df, population, facet.col = NULL, facet.txt.col = NULL){
+  if(!is.null(facet.col)){
+    pl <- ggplot() + geom_segment(data = subset(df, k3pop_sm %in% population),
                                 aes(color= ancestry, x=sample_name, xend=sample_name, y=start, yend=end),
                                 linewidth = 8) +
     facet_wrap(~chrom, scales = "free",
@@ -104,6 +105,25 @@ viterbi_columns_plot_allChr <- function(df, population){
           panel.grid.minor = element_blank(),
           panel.background = element_blank(),
           legend.position = "bottom",
-          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 5))
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 5),
+          strip.background =element_rect(fill= facet.col),
+          strip.text = element_text(colour = facet.txt.col))
+  } else {
+    pl <- ggplot() + geom_segment(data = subset(df, k3pop_sm %in% population),
+                                  aes(color= ancestry, x=sample_name, xend=sample_name, y=start, yend=end),
+                                  linewidth = 8) +
+      facet_wrap(~chrom, scales = "free",
+                 labeller = labeller(chrom = pretty_chrom),
+                 nrow = 2) +
+      scale_color_manual(values=anc.cols) +
+      ggtitle(paste0(population," introgression patterns")) +
+      ylab("position") + xlab("Sample Name") +
+      theme_classic() +
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.background = element_blank(),
+            legend.position = "bottom",
+            axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 5))
+  }
   return(pl)
 }
