@@ -127,3 +127,48 @@ viterbi_columns_plot_allChr <- function(df, population, facet.col = NULL, facet.
   }
   return(pl)
 }
+
+# PIXY functions
+pixy_to_long <- function(pixy_files){
+  
+  pixy_df <- list()
+  
+  for(i in 1:length(pixy_files)){
+    
+    stat_file_type <- gsub(".*_|.txt", "", pixy_files[i])
+    
+    if(stat_file_type == "pi"){
+      
+      df <- read.delim(pixy_files[i], sep = "\t")
+      df <- df %>%
+        pivot_longer(cols = -c(pop, window_pos_1, window_pos_2, chromosome),
+               names_to = "statistic", values_to = "value") %>%
+        rename(pop1 = pop) %>%
+        mutate(pop2 = NA)
+      
+      pixy_df[[i]] <- df
+      
+      
+    } else{
+      
+      df <- read.delim(pixy_files[i], sep = "\t")
+      df <- df %>%
+        pivot_longer(cols = -c(pop1, pop2, window_pos_1, window_pos_2, chromosome),
+                     names_to = "statistic", values_to = "value")
+      pixy_df[[i]] <- df
+      
+    }
+    
+  }
+  
+  bind_rows(pixy_df) %>%
+    arrange(pop1, pop2, chromosome, window_pos_1, statistic)
+  
+}
+
+# pixy Labeller
+# custom labeller for special characters in pi/dxy/fst
+pixy_labeller <- as_labeller(c(avg_pi = "pi",
+                               avg_dxy = "D[XY]",
+                               avg_wc_fst = "F[ST]"),
+                             default = label_parsed)
