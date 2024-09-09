@@ -28,12 +28,12 @@ module load tabixpp/1.1.2-GCC-12.3.0
 
 #### VARS
 VCF=/mnt/home/wils1582/allSites_CBP_final.filtered.vcf.gz
-POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops.txt
+POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops_NYC_ownpop.txt
 OUTDIR=/mnt/scratch/wils1582
-PREFIX=_introgressed_w100_allSites_CBP
+PREFIX=introgressed_nyc_allSites_CBP
 
 # Optional VARS
-BED=
+BED=/mnt/home/wils1582/capsella_introgression/nyc_rubella_pixy.bed
 
 # # first, make sure the vcf is indexed
 # tabix $VCF 
@@ -65,4 +65,5 @@ BED=
  --bed_file "$BED" \
  --n_cores 10 \
  --output_folder "$OUTDIR" \
- --output_prefix "$PREFIX" 
+ --output_prefix "$PREFIX" \
+ --bypass_invariant_check 'yes'
