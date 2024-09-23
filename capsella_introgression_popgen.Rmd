@@ -85,16 +85,20 @@ vit_all <- left_join(vit_all, k3pops)
 # order the scaffold levels
 vit_all$chrom <- factor(vit_all$chrom, levels = paste0("jlSCF_", 9:16))
 ```
+
 # Exploratory
-The first thing I want to check is that the proportion of *C. rubella* ancestry is less than the proportion of *C. bursa-pastoris* ancestry.
+The first thing I want to check is that the proportion of *C. rubella* ancestry is less than the proportion of *C. bursa-pastoris* ancestry. This is just a check to make sure I did not mix up the ancestry proportions from Ancestry HMM
 ```{r}
 # proportion of local ancestry
+print("Proportion of C. rubella ancestry by basepairs")
 colSums(vit_all[vit_all$ancestry == "rubella", "tract_length"])/colSums(vit_all[, "tract_length"])
 
 # bursa-pastoris
+print("Proportion of C. bursa-pastoris ancestry by basepairs")
 colSums(vit_all[vit_all$ancestry == "bursa_pastoris", "tract_length"])/colSums(vit_all[, "tract_length"])
 
 # heterozygous
+print("Proportion of heterozygous ancestry by basepairs")
 colSums(vit_all[vit_all$ancestry == "heterozygous", "tract_length"])/colSums(vit_all[, "tract_length"])
 ```
 
@@ -108,29 +112,50 @@ tl_dist <- ggplot() +
   facet_grid(chrom~ancestry, scales = "free") +
   theme(legend.position = "none")
 tl_dist
+
+```
+
+```{r}
 ggsave(paste0(temp_plotdir, "tract_len.png"), tl_dist, width = 7, height = 5)
 ```
 Most tracts are short, and bursa-pastoris tracts are on average, longer than others. Heterozygous tracts are the shortest.
+
 # Introgression Plots
 
-```{r nyc introgression plot}
-# plot with funtion
-ny_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = "NYC")
-ggsave(paste0(temp_plotdir, "ny_viterbi_SCF16_new.png"), ny_16, units = "in", height = 7, width = 12)
+Single chromosome plots in a loop
 
-# plot with funtion
-eu_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = "N_Europe")
-ggsave(paste0(temp_plotdir, "eu_viterbi_SCF16_new.png"), eu_16, units = "in", height = 7, width = 12)
-
-# plot with funtion
-mena_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = "MENA")
-ggsave(paste0(temp_plotdir, "mena_viterbi_SCF16_new.png"), mena_16, units = "in", height = 7, width = 12)
-
-# plot with funtion
-easian_16 <- viterbi_columns_plot(df = vit_all, scaffold_num = 16, population = "E_Asia")
-ggsave(paste0(temp_plotdir, "easia_viterbi_SCF16_new.png"), easian_16, units = "in", height = 7, width = 12)
+```{r}
+for (scf in c(9:16)) {
+  plt <- viterbi_columns_plot(df = vit_all, scaffold_num = scf, population = "NYC")
+  filenm <- paste0("nyc_viterbi_scf", scf, ".png")
+  ggsave(paste0(temp_plotdir, filenm), plt, units = "in", height = 7, width = 12)
+}
 ```
 
+
+```{r N. Eurasia single-scaffold introgression plots}
+for (scf in c(9:16)) {
+  plt <- viterbi_columns_plot(df = vit_all, scaffold_num = scf, population = "N_Europe")
+  filenm <- paste0("neu_viterbi_scf", scf, ".png")
+  ggsave(paste0(temp_plotdir, filenm), plt, units = "in", height = 7, width = 12)
+}
+```
+
+```{r Mediterranean single-scaffold introgression plots}
+for (scf in c(9:16)) {
+  plt <- viterbi_columns_plot(df = vit_all, scaffold_num = scf, population = "MENA")
+  filenm <- paste0("mena_iterbi_scf", scf, ".png")
+  ggsave(paste0(temp_plotdir, filenm), plt, units = "in", height = 7, width = 12)
+}
+```
+
+```{r East Asia single-scaffold introgression plots}
+for (scf in c(9:16)) {
+  plt <- viterbi_columns_plot(df = vit_all, scaffold_num = scf, population = "E_Asia")
+  filenm <- paste0("easia_viterbi_scf", scf, ".png")
+  ggsave(paste0(temp_plotdir, filenm), plt, units = "in", height = 7, width = 12)
+}
+```
 
 ```{r nyc_introgression_plot_allScaffolds}
 nyc_allc <- viterbi_columns_plot_allChr(vit_all, population = "NYC", facet.col = "#585380", facet.txt.col = "white")
@@ -159,7 +184,7 @@ ggsave(paste0(temp_plotdir,"easia_viterbi_all4.png"),easia_allc, units = "in", h
 ```
 
 
-Did not get the output I expected in that ther are some very small regions in the East Asian population that seem to have C. rubella ancestry.
+Did not get the output I expected in that there are some very small regions in the East Asian population that seem to have C. rubella ancestry.
 ```{r, eval=FALSE}
 # load posterior for sample SRR6179241.sam (AQ415)
 aq415 <- read.csv(paste0(ahmm_vit_path, "SRR6179241.sam.posterior"),
@@ -205,16 +230,14 @@ east_asian <- vit_all[which(vit_all$k3population == "E_Asia"),]
 
 
 ###### Introgression .bed files
-To use this tool, I need a bed file of introgressed regions for each sample separately.
+To use this tool, I need a bed file of *C. rubella* regions for each sample separately.
 
 Starting with the NYC samples
-It may be possible to make a co-occurrence matrix with the bed output files.
 ```{r}
 ny_rub_by_sample <- bed_by_sample(vit_all, anc = "rubella", population = "NYC", outdir = bed_files)
 ```
 
 Now do the same for Mediterranean samples.
-
 ```{r mediterranenan samples, eval=FALSE}
 mena_rub_by_sample <- bed_by_sample(vit_all, anc = "rubella",
                                   population = "MENA",
@@ -232,7 +255,7 @@ eu_rub_by_sample <- bed_by_sample(vit_all, anc = "rubella",
 ### Introgressed region frequency
 This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and **multi-inter** from BEDTools
 
-```{bash, code = readLines("multiinter.sh")}
+```{bash, code = readLines("~/Documents/PhD/Research/capsella_introgression/multiinter.sh"), eval = FALSE}
 ```
 
 Let's take a look at the output
@@ -706,20 +729,22 @@ allsites_inds <- read.csv("~/Documents/PhD/Research/capsella_introgression/allSi
 allsites_dat <- left_join(allsites_inds, k3pops, join_by("V1"=="vcf_sample_name"))
 
 # invidiual missing from population file is WAC5 which is mediterranean.
-allsites_dat[which(allsites_dat$V1 == "SRR6382401.sam"), c("sample_name", "k3population")] <- c("WAC5", "MENA")
+allsites_dat[which(allsites_dat$V1 == "SRR6382401.sam"), c("sample_name", "k3population", "k3pop_sm")] <- c("WAC5", "MENA", "MENA")
 
 # Then, just save as a headerless file with vcf sample names and population names
 write.table(allsites_dat[c(1,3)],
             file = "~/Documents/PhD/Research/capsella_introgression/pixy_pops.txt",
             col.names = F,
             row.names = F,
-            quote = F)
+            quote = F,
+            sep = "\t")
 # Then, just save as a headerless file with vcf sample names and population names
 write.table(allsites_dat[c(1,4)],
             file = "~/Documents/PhD/Research/capsella_introgression/pixy_pops_NYC_ownpop.txt",
             col.names = F,
             row.names = F,
-            quote = F)
+            quote = F,
+            sep = "\t")
 ```
 
 
@@ -743,6 +768,30 @@ pixy_folder <- "~/Documents/PhD/Research/capsella_introgression/pixy/"
 pixy_files <- list.files(pixy_folder, full.names = TRUE)
 pixy_df <- pixy_to_long(pixy_files)
 ```
+
+Just calculating genome wide nucleotide diversity (pi) in the different populations by just summing the numerator (differenced) and denominator (comparisons) and dividing
+```{r load genome wide pi}
+# calculated in windows of 10,000bp
+pi_w10000 <- read.csv("~/Documents/PhD/Research/capsella_introgression/pixy/nyc_allSites_CBP_pi.txt",
+                      sep = "\t",
+                      header = T)
+```
+
+
+```{r calculate genome wide pi}
+nyc_pi <- pi_w10000[which(pi_w10000$pop == "NYC" & pi_w10000$no_sites > 0),]
+nyc_subgenome_pi <- sum(nyc_pi$count_diffs)/sum(nyc_pi$count_comparisons)
+
+neu_pi <- pi_w10000[which(pi_w10000$pop == "N_Europe" & pi_w10000$no_sites > 0),]
+neu_subgenome_pi <- sum(neu_pi$count_diffs)/sum(neu_pi$count_comparisons)
+
+mena_pi <- pi_w10000[which(pi_w10000$pop == "MENA" & pi_w10000$no_sites > 0),]
+mena_subgenome_pi <- sum(mena_pi$count_diffs)/sum(mena_pi$count_comparisons)
+
+easia_pi <- pi_w10000[which(pi_w10000$pop == "E_Asia" & pi_w10000$no_sites > 0),]
+easia_subgenome_pi <- sum(easia_pi$count_diffs)/sum(easia_pi$count_comparisons)
+```
+
 
 Pixy Plot
 ```{r}
@@ -817,6 +866,39 @@ pixy_df %>%
   scale_y_continuous(expand = c(0, 0))+
   scale_color_brewer(palette = "Set1")
 ```
+
+PXIY on the introgressed regions: NYC is its own population here
+```{r}
+pixy_folder <- "~/Documents/PhD/Research/capsella_introgression/pixy/"
+pixy_files <- list.files(pixy_folder, pattern= "^[introgessed]", full.names = TRUE) # list only the files that start with 'introgressed'
+pixy_df <- pixy_to_long(pixy_files)
+```
+
+```{r}
+pixy_df %>%
+  filter(chromosome == 'jlSCF_10') %>%
+  filter(pop1 %in% 'NYC') %>% 
+  filter(statistic %in% c("avg_dxy", "avg_wc_fst")) %>%
+  mutate(chr_position = ((window_pos_1 + window_pos_2)/2)/1000000) %>%
+  ggplot(aes(x = chr_position, y = value, color = statistic))+
+  geom_point(linewidth = 0.25, alpha = 0.5)+
+  facet_grid(pop2 ~ .,
+             scales = "free_y", switch = "x", space = "free_x")+
+  xlab("Position on Chromosome (Mb)")+
+  ylab("Statistic Value")+
+  theme_bw()+
+  ggtitle("Differentiation in regions introgressed in NYC: Chr 10")
+  theme(panel.spacing = unit(0.1, "cm"),
+        strip.background = element_blank(),
+        strip.placement = "outside",
+        legend.position = "bottom")+
+  scale_x_continuous(expand = c(0, 0))+
+  scale_y_continuous(expand = c(0, 0))+
+  scale_color_brewer(palette = "Set1")
+```
+I have a bed file so can I just do a PCA on the introgresed regions only (this is actually just the Lostruct analysis combined)
+
+
 
 #### Genic Content
 We may be interested in comparing the number of genes in introgressed regions vs non-introgressed regions. To do this, we can use BEDTools intersect to see how many basepairs of genes from a Genome Feature File (GFF) intersect with basepairs from introgressed or non-introgressed regions.

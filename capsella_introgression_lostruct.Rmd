@@ -9,9 +9,6 @@ Here, I will document a way that we validated that Ancestry HMM was pocking up o
 
 We decided to use LOSTRUCT to look at a PCA at the locus level in our introgressed and non-introgressed loci of *Capsella bursa-pasoris*.
 
-# Update: July 8, 2024
-Updating Lostruct analysis with slightly different methods. 
-
 ```{r}
 # load lostruct
 library(lostruct)
@@ -136,14 +133,68 @@ Testing with apply
 ```{r}
 eigen_list <- lapply(scf_ls, lostruct::eigen_windows, win=3000, k=2)
 ```
-I think the SNP calls on the other chromosomes have too many zeros, so I will ignore them for now.
+
+
+You can use BCF tools to pull out windows useful with lostruct.
+
+
+```{bash, code = readLines("~/Documents/PhD/Research/capsella_introgression/bed_extract_multiinter.sh"), eval = FALSE}
+```
+
+
+Load genotype matrix for only rubella regions
+```{r}
+nyc_rubella <- read.csv("~/Desktop/nyc_rubella_vcf.txt",
+                        sep = "\t",
+                        header = F)
+
+# load sample names
+samples <- scan("~/Desktop/nyc_rubella_vcf_samples.txt", character(), quote = "")
+
+colnames(nyc_rubella) <- c("chrom", "pos", samples)
+
+# split by chromosome
+nyc_rubella_chr <- split(nyc_rubella[3:258], nyc_rubella[1])
+
+# change to matrix
+#test <- data.matrix(nyc_rubella[3:258])
+
+# make all data tabled matrices
+test2 <- lapply(nyc_rubella_chr, data.matrix)
+```
+
+
+Can I run lostruct on a handful of windows at a time?
+```{r}
+scf10_window100_bp <- lostruct::eigen_windows(data = test2[[1]],
+              win = 100,
+              k=2)
+
+lpcascf10 <- apply(scf10_window100_bp, 1, reform_map, dat = scf10_window100_bp)
+
+lpcascf10_long <- bind_rows(lpcascf10, .id = "window")
+
+lpcascf10_long <- lpcascf10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+
+
+lpcascf10_long$window <- factor(lpcascf10_long$window, levels = 1:length(unique(lpcascf10_long$window)))
+```
+
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=subset(lpcascf10_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+```
 
 # Plots??
 The first window of scaffold 9 should be C. rubella for all of the NYC individuals. I think?
 
 ```{r lostruct functions}
 # Function for reformatting lostruct output for easy plotting
-  # x input is a data.frame from lostruct where each row is a window and the columns are eigenvals for each sample
+# x input is a data.frame from lostruct where each row is a window and the columns are eigenvals for each sample
 
 reform_map <- function(x, dat){
   #for each row, select all columns with PC1 in their name and store
