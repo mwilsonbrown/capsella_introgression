@@ -30,7 +30,7 @@ module load tabixpp/1.1.2-GCC-12.3.0
 VCF=/mnt/home/wils1582/allSites_CBP_final.filtered.vcf.gz
 POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops_NYC_ownpop.txt
 OUTDIR=/mnt/scratch/wils1582
-PREFIX=introgressed_nyc_allSites_CBP
+PREFIX=nyc_allSites_CBP
 
 # Optional VARS
 BED=/mnt/home/wils1582/capsella_introgression/nyc_rubella_pixy.bed
@@ -58,11 +58,19 @@ BED=/mnt/home/wils1582/capsella_introgression/nyc_rubella_pixy.bed
 #--bypass_invariant_check 'yes' \
 #--chromosomes 'jlSCF_10,jlSCF_11'
 
- # Run PIXY on intervals using a bed file
+# # Run PIXY on intervals using a bed file
+# pixy --stats pi fst dxy \
+# --vcf $VCF \
+# --populations $POPS \
+# --bed_file "$BED" \
+# --n_cores 10 \
+# --output_folder "$OUTDIR" \
+# --output_prefix "$PREFIX" \
+# --bypass_invariant_check 'yes'
  pixy --stats pi fst dxy \
  --vcf $VCF \
  --populations $POPS \
- --bed_file "$BED" \
+ --window_size 10000 \
  --n_cores 10 \
  --output_folder "$OUTDIR" \
  --output_prefix "$PREFIX" \
