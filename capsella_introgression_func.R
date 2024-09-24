@@ -129,6 +129,39 @@ viterbi_columns_plot_allChr <- function(df, population, facet.col = NULL, facet.
   return(pl)
 }
 
+######### Data functions--------
+# lostruct formatting
+# Function for reformatting lostruct output for easy plotting
+# x input is a data.frame from lostruct where each row is a window and the columns are eigenvals for each sample
+
+reform_map <- function(x, dat){
+  #for each row, select all columns with PC1 in their name and store
+  #pc1_val <- x[which(grepl("PC_1_", names(x[1:length(x)]), fixed = T))]
+  pc1_val <- x[which(str_detect(colnames(dat), "PC_1_"))]
+  #get sample name from named vector of PC1 values
+  sample_id1 <- str_remove(names(pc1_val), "PC_1_")
+  #and for PC2
+  #pc2_val <- x[which(grepl("PC_2_", names(x[1:length(x)]), fixed = T))]
+  pc2_val <- x[which(str_detect(colnames(dat), "PC_2_"))]
+  #sample name
+  sample_id2 <- str_remove(names(pc2_val), "PC_2_")
+  
+  #double check the sample names match
+  ifelse(identical(sample_id1, sample_id2) == T, 
+         sample_id <- sample_id2,
+         print("Sample ID numbers do not match. Check vector indices."))
+  # put PC1 values and PC2 values together in a data frame with sample names 
+  win_pca <- data.frame(PC1 = pc1_val, PC2 = pc2_val, vcf_sample_name = sample_id)
+  # get species info from wgs data
+  suppressMessages(win_pca2 <- left_join(win_pca, wgs[,c("vcf_sample_name", "species", "country")]))
+  # join the map key; it should not matter if it is left, right, or both join here since both should only have the number of samples
+  suppressMessages(df <- left_join(win_pca2, k3pops))
+  #return the whole df
+  df2 <- df[,c("vcf_sample_name","PC1", "PC2", "species", "k3population", "k3pop_sm", "country")]
+  #return(df)
+  return(df2)
+}
+
 # PIXY functions
 pixy_to_long <- function(pixy_files){
   

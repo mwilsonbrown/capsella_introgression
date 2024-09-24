@@ -167,6 +167,258 @@ ggsave(paste0(plot_dir, "introgression_plot_allscf.png"), width = 11, height = 5
 
 
 #### Evaluating introgressed regions with LOSTRUCT
+The new goal here, is do have the LOSTRUCT windows to be based on genomic regions determined by introgression or not.
+
+You can use BCF tools to pull out windows useful with lostruct.
+```{bash, code = readLines("~/Documents/PhD/Research/capsella_introgression/bed_extract_multiinter.sh"), eval = FALSE}
+```
+
+Load genotype matrix for only rubella regions
+```{r}
+# load numeric genotype matrix from bed_extract_multiinter.sh
+nyc_rubella <- read.csv("~/Desktop/nyc_rubella_vcf.txt",
+                        sep = "\t",
+                        header = F)
+
+# load sample names; sample names aquired from bcftools query -l without Neslia paniculata sample
+samples <- scan("~/Desktop/nyc_rubella_vcf_samples.txt", character(), quote = "")
+
+# assign sample names to columns
+colnames(nyc_rubella) <- c("chrom", "pos", samples)
+
+# assign variant ids to rownames
+rownames(nyc_rubella) <- paste(nyc_rubella$chrom, nyc_rubella$pos, sep = ":")
+
+# split by chromosome
+nyc_rubella_chr <- split(nyc_rubella[3:258], nyc_rubella[1])
+
+# change to matrix
+#test <- data.matrix(nyc_rubella[3:258])
+
+# make all data tabled matrices
+test <- lapply(nyc_rubella_chr, data.matrix)
+```
+
+I can either pass the numeric matrix directly to eigen_windows or write a window extraction function that returns the numeric matrix of a specific window. I will try to write a window extractor function.
+
+The arguments of the function have to take a numeric integer, n, to select the window of interest. So, basically, I need to figure out the starting and stopping SNPs for
+
+My first idea is to assign a window ID to any location where the last bp of the previous row in the multiinter BED is not the same at the first bp of the next row, indicating a gap.
+
+Just work with Scaffold 10 for the time being.
+```{r, eval = F}
+# scaffold 10 matrix
+scf10m <- test[[1]]
+
+# grab rownames and drop the scaffold indicator
+rnames <- as.integer(str_remove_all(rownames(scf10m), paste0("jlSCF_", "10", ":")))
+
+gaps <- lead(rnames, n=1) - lag(rnames, n=1)
+
+# find positions where theres a large gap between SNPs (10,000bp)
+rnames[which(gaps > 10000)-1]
+```
+Kind of silly to write my own window extractor function when all of the SNPs in the matrix fall within regions that have at least one individual. So at this point, I will just make windows of about 100 SNPs. Then, for a comparison of regions without introgression, I will use BED files from the *C. bursa-pastoris* inferred regions.
+
+```{r calculate eigens for windows on scaffold 10}
+# ON scaffold 10, extract windows of 100 continuous SNPs (rows of matrix)
+s10_100snp <- lostruct::eigen_windows(data = test[["jlSCF_10"]],
+              win = 100,
+              k=2)
+```
+
+
+```{r reformat eigeninfo for scaffold 10}
+# apply reformatting function to each row of output matrix
+pca10 <- apply(s10_100snp, 1, reform_map, dat = s10_100snp)
+
+# unroll list into long data frame
+pca10_long <- bind_rows(pca10, .id = "window")
+
+# if no population information present, fill population columns with species
+pca10_long <- pca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+
+# make the windows a factor
+pca10_long$window <- factor(pca10_long$window, levels = 1:length(unique(pca10_long$window)))
+```
+
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=subset(lpcascf10_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+```
+
+
+```{r}
+# calculate eigenvals and vecs for windows of size 3000 bp on scaffold 9
+eigen9 <- lostruct::eigen_windows(data = sc9,
+              win = 1000,
+              k=2)
+eigen10 <- lostruct::eigen_windows(data = sc10,
+              win = 1000,
+              k=2)
+
+eigen14 <- lostruct::eigen_windows(data = sc14,
+              win = 1000,
+              k=2)
+```
+
+Testing with apply
+```{r}
+eigen_list <- lapply(scf_ls, lostruct::eigen_windows, win=3000, k=2)
+```
+
+# Plots??
+The first window of scaffold 9 should be C. rubella for all of the NYC individuals. I think?
+Now I apply the function to each row so each row (representing the results from a window) are each in a data frame stored in a list.
+```{r}
+# apply data reformatting function to output
+lpca9 <- apply(eigen9, 1, reform_map, dat = eigen9)
+```
+
+Pivot longer to plot them all at once
+```{r}
+lpca9_long <- bind_rows(lpca9, .id = "window")
+```
+
+fill in NA for population
+```{r}
+# lpca9_long$k3population <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
+# lpca9_long$k3pop_sm <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
+
+lpca9_long <- lpca9_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+```
+
+Make windows factors easily
+```{r}
+lpca9_long$window <- factor(lpca9_long$window, levels = 1:length(unique(lpca9_long$window)))
+```
+
+
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=subset(lpca9_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+
+ggsave("lostruct_pca_scf9_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
+```
+
+
+```{r}
+pc_plot2 <- ggplot() +
+  geom_point(data=lpca9[[2]], aes(x=PC1, y=PC2, color = species), size = 3) +
+  theme_bw()
+
+pc_plot2
+```
+
+```{r}
+# apply data reformatting function to output
+lpca10 <- apply(eigen10, 1, reform_map, dat = eigen10)
+```
+
+Pivot longer to plot them all at once
+```{r}
+lpca10_long <- bind_rows(lpca10, .id = "window")
+```
+
+fill in NA for population
+```{r}
+lpca10_long <- lpca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+```
+
+Make windows factors easily
+```{r}
+lpca10_long$window <- factor(lpca10_long$window, levels = 1:length(unique(lpca10_long$window)))
+```
+
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=lpca10_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+
+#ggsave("lostruct_pca_scf10_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
+```
+Single window at a time blown up
+```{r}
+sc10w34 <- ggplot() +
+  geom_point(data=subset(lpca10_long, window == 34 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
+sc10w34
+
+ggsave("lostruct_pca_scf10_window34.png", sc10w34, width = 7, height = 5, units = "in")
+```
+
+```{r}
+sc10w10 <- ggplot() +
+  geom_point(data=subset(lpca10_long, window == 10 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
+
+sc10w10
+
+ggsave("lostruct_pca_scf10_window10.png", sc10w10, width = 7, height = 5, units = "in")
+```
+
+```{r}
+sc10w12 <- ggplot() +
+  geom_point(data=subset(lpca10_long, window == 12
+                         ), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  theme_classic() + facet_wrap(~window)
+
+ggsave("lostruct_pca_scf10_window12.png", sc10w12, width = 10, height = 6, units = "in")
+```
+
+Scaffold 14
+For an example of NYC CBP alone
+
+Prep the data
+
+```{r}
+# apply data reformatting function to output
+lpca14 <- apply(eigen14, 1, reform_map, dat = eigen14)
+```
+
+Pivot longer to plot them all at once
+```{r}
+lpca14_long <- bind_rows(lpca14, .id = "window")
+```
+
+fill in NA for population
+```{r}
+lpca14_long <- lpca14_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+```
+
+Make windows factors easily
+```{r}
+lpca14_long$window <- factor(lpca14_long$window, levels = 1:length(unique(lpca14_long$window)))
+```
+
+```{r}
+plt <- ggplot() +
+  geom_point(data=lpca14_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+plt
+
+ggsave("lostruct_pca_scf14_transparent.png", plt, width = 10, height = 6, units = "in")
+```
+### Joining plots
 
 Attempt to indicate windows corresponding to Lostruct analysis
 ```{r}
@@ -414,332 +666,6 @@ gt <- extract.gt(cbpcr, element = 'GT', as.numeric = TRUE)
 #gt2 <- extract.gt(cbpcr, element = 'GT', as.numeric = FALSE)
 ```
 
-First, calculate the SNP density along each chromosome to determine good window sizes.
-
-I know from the viterbi introgression results that the minimum tract length of any ancestry is 1000 basepairs with a median of about 12k and mean of about 80k.
-
-Given the length of each chromosome, windowing by minimum base pairs will give me about 18-48K windows per chromosome.
-```{r}
-# Chromosome lengths from VCF header
-# bcftools view -h ahmm_pruned_all.vcf.gz | grep '##contig'
-
-# chromosome lengths
-chrom.lens <- c(jlSCF_10=18059344,
-                jlSCF_11=18860713,
-                jlSCF_12=16958022,
-                jlSCF_13=14108429,
-                jlSCF_14=27977798,
-                jlSCF_15=22212120,
-                jlSCF_16=17841782,
-                jlSCF_9=43809629)
-# select sites
-chroms <- cbpcr[,1]
-
-# sum sites on each chromosome
-sum(chroms@fix[,"CHROM"]=="jlSCF_9")
-
-# posit
-snps <- data.frame(chroms@fix[,c("CHROM","POS")])
-
-# turn to list
-snp_ls <- split(snps, snps[1])
-
-test<- snp_ls[[1]]
-test$POS <- as.numeric(test$POS)
-
-test2 <- test %>% mutate(dist_n = lead(POS) - lag(POS))
-
-summary(test2$dist_n)
-
-# average SNPs per chromosome
-snps_c <- unlist(lapply(snp_ls, nrow))
-```
-Base pairs between SNPs is pretty variable, but it seems like 
-Compute the eigenstructure for windows along the genome.
-
-I am going to split the gt matrix into chromosomes, so that I can apply a windowing function to each chromosome separately.
-```{r}
-# splitting the gt matrix by chromomosome
-sc9 <- gt[1:max(which(str_detect(rownames(gt), "jlSCF_9"))),] #scaffold 9
-sc10 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_9")))):max(which(str_detect(rownames(gt), "jlSCF_10"))),] #scaffold 10
-sc11 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_10")))):max(which(str_detect(rownames(gt), "jlSCF_11"))),] #scaffold 11
-sc12 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_11")))):max(which(str_detect(rownames(gt), "jlSCF_12"))),] #scaffold 12
-
-sc13 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_12")))):max(which(str_detect(rownames(gt), "jlSCF_13"))),] #scaffold 13
-sc14 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_13")))):max(which(str_detect(rownames(gt), "jlSCF_14"))),] #scaffold 14
-# remove chromosome from row name
-rownames(sc14) <- as.numeric(str_remove(rownames(sc14), "jlSCF_14_"))
-
-sc15 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_14")))):max(which(str_detect(rownames(gt), "jlSCF_15"))),] #scaffold 15
-sc16 <- gt[(1+max(which(str_detect(rownames(gt), "jlSCF_15")))):max(which(str_detect(rownames(gt), "jlSCF_16"))),] #scaffold 16
-```
-
-Fold all these into a list to make applying eigenwindows easier?
-```{r}
-scf_ls <- list(sc9,sc10,sc11,sc12,sc13,sc14,sc15,sc16)
-```
-
-
-```{r}
-# calculate eigenvals and vecs for windows of size 3000 bp on scaffold 9
-eigen9 <- lostruct::eigen_windows(data = sc9,
-              win = 1000,
-              k=2)
-eigen10 <- lostruct::eigen_windows(data = sc10,
-              win = 1000,
-              k=2)
-
-eigen14 <- lostruct::eigen_windows(data = sc14,
-              win = 1000,
-              k=2)
-```
-
-Testing with apply
-```{r}
-eigen_list <- lapply(scf_ls, lostruct::eigen_windows, win=3000, k=2)
-```
-
-
-You can use BCF tools to pull out windows useful with lostruct.
-
-
-```{bash, code = readLines("~/Documents/PhD/Research/capsella_introgression/bed_extract_multiinter.sh"), eval = FALSE}
-```
-
-
-Load genotype matrix for only rubella regions
-```{r}
-nyc_rubella <- read.csv("~/Desktop/nyc_rubella_vcf.txt",
-                        sep = "\t",
-                        header = F)
-
-# load sample names
-samples <- scan("~/Desktop/nyc_rubella_vcf_samples.txt", character(), quote = "")
-
-colnames(nyc_rubella) <- c("chrom", "pos", samples)
-
-# split by chromosome
-nyc_rubella_chr <- split(nyc_rubella[3:258], nyc_rubella[1])
-
-# change to matrix
-#test <- data.matrix(nyc_rubella[3:258])
-
-# make all data tabled matrices
-test2 <- lapply(nyc_rubella_chr, data.matrix)
-```
-
-
-Can I run lostruct on a handful of windows at a time?
-```{r}
-scf10_window100_bp <- lostruct::eigen_windows(data = test2[[1]],
-              win = 100,
-              k=2)
-
-lpcascf10 <- apply(scf10_window100_bp, 1, reform_map, dat = scf10_window100_bp)
-
-lpcascf10_long <- bind_rows(lpcascf10, .id = "window")
-
-lpcascf10_long <- lpcascf10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
-
-
-lpcascf10_long$window <- factor(lpcascf10_long$window, levels = 1:length(unique(lpcascf10_long$window)))
-```
-
-```{r}
-pc_plot1 <- ggplot() +
-  geom_point(data=subset(lpcascf10_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
-
-pc_plot1
-```
-
-# Plots??
-The first window of scaffold 9 should be C. rubella for all of the NYC individuals. I think?
-
-```{r lostruct functions}
-# Function for reformatting lostruct output for easy plotting
-# x input is a data.frame from lostruct where each row is a window and the columns are eigenvals for each sample
-
-reform_map <- function(x, dat){
-  #for each row, select all columns with PC1 in their name and store
-  #pc1_val <- x[which(grepl("PC_1_", names(x[1:length(x)]), fixed = T))]
-  pc1_val <- x[which(str_detect(colnames(dat), "PC_1_"))]
-  #get sample name from named vector of PC1 values
-  sample_id1 <- str_remove(names(pc1_val), "PC_1_")
-  #and for PC2
-  #pc2_val <- x[which(grepl("PC_2_", names(x[1:length(x)]), fixed = T))]
-  pc2_val <- x[which(str_detect(colnames(dat), "PC_2_"))]
-  #sample name
-  sample_id2 <- str_remove(names(pc2_val), "PC_2_")
-
-  #double check the sample names match
-  ifelse(identical(sample_id1, sample_id2) == T, 
-        sample_id <- sample_id2,
-        print("Sample ID numbers do not match. Check vector indices."))
-  # put PC1 values and PC2 values together in a data fram with sample names 
-  win_pca <- data.frame(PC1 = pc1_val, PC2 = pc2_val, vcf_sample_name = sample_id)
-  # join the map key; it should not matter if it is left, right, or both join here since both should only have the number of samples
-  df <- left_join(win_pca, sample_info)
-  #return the whole df
-  df2 <- df[,c("vcf_sample_name","PC1", "PC2", "species", "k3population", "k3pop_sm")]
-  #return(df)
-  return(df2)
-}
-```
-
-
-Now I apply the function to each row so each row (representing the results from a window) are each in a data frame stored in a list.
-```{r}
-# apply data reformatting function to output
-lpca9 <- apply(eigen9, 1, reform_map, dat = eigen9)
-```
-
-Pivot longer to plot them all at once
-```{r}
-lpca9_long <- bind_rows(lpca9, .id = "window")
-```
-
-fill in NA for population
-```{r}
-# lpca9_long$k3population <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
-# lpca9_long$k3pop_sm <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
-
-lpca9_long <- lpca9_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
-```
-
-Make windows factors easily
-```{r}
-lpca9_long$window <- factor(lpca9_long$window, levels = 1:length(unique(lpca9_long$window)))
-```
-
-Plot please
-```{r}
-# species colors
-#sp.cols <- c("Capsella bursa-pastoris = "#6D9636", rubella = "#FFCCFD", heterozygous = "#96938E")
-```
-
-
-```{r}
-pc_plot1 <- ggplot() +
-  geom_point(data=subset(lpca9_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
-
-pc_plot1
-
-ggsave("lostruct_pca_scf9_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
-```
-
-
-```{r}
-pc_plot2 <- ggplot() +
-  geom_point(data=lpca9[[2]], aes(x=PC1, y=PC2, color = species), size = 3) +
-  theme_bw()
-
-pc_plot2
-```
-
-```{r}
-# apply data reformatting function to output
-lpca10 <- apply(eigen10, 1, reform_map, dat = eigen10)
-```
-
-Pivot longer to plot them all at once
-```{r}
-lpca10_long <- bind_rows(lpca10, .id = "window")
-```
-
-fill in NA for population
-```{r}
-lpca10_long <- lpca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
-```
-
-Make windows factors easily
-```{r}
-lpca10_long$window <- factor(lpca10_long$window, levels = 1:length(unique(lpca10_long$window)))
-```
-
-```{r}
-pc_plot1 <- ggplot() +
-  geom_point(data=lpca10_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
-
-pc_plot1
-
-#ggsave("lostruct_pca_scf10_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
-```
-Single window at a time blown up
-```{r}
-sc10w34 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 34 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
-  theme(strip.background =element_rect(fill="lightgrey"),
-        strip.text = element_text(size = 15))
-sc10w34
-
-ggsave("lostruct_pca_scf10_window34.png", sc10w34, width = 7, height = 5, units = "in")
-```
-
-```{r}
-sc10w10 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 10 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
-  theme(strip.background =element_rect(fill="lightgrey"),
-        strip.text = element_text(size = 15))
-
-sc10w10
-
-ggsave("lostruct_pca_scf10_window10.png", sc10w10, width = 7, height = 5, units = "in")
-```
-
-```{r}
-sc10w12 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 12
-                         ), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  theme_classic() + facet_wrap(~window)
-
-ggsave("lostruct_pca_scf10_window12.png", sc10w12, width = 10, height = 6, units = "in")
-```
-
-Scaffold 14
-For an example of NYC CBP alone
-
-Prep the data
-
-```{r}
-# apply data reformatting function to output
-lpca14 <- apply(eigen14, 1, reform_map, dat = eigen14)
-```
-
-Pivot longer to plot them all at once
-```{r}
-lpca14_long <- bind_rows(lpca14, .id = "window")
-```
-
-fill in NA for population
-```{r}
-lpca14_long <- lpca14_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
-```
-
-Make windows factors easily
-```{r}
-lpca14_long$window <- factor(lpca14_long$window, levels = 1:length(unique(lpca14_long$window)))
-```
-
-```{r}
-plt <- ggplot() +
-  geom_point(data=lpca14_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
-
-plt
-
-ggsave("lostruct_pca_scf14_transparent.png", plt, width = 10, height = 6, units = "in")
-```
 
 #-----------------OLD CODE-----------------
 
