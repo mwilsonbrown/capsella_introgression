@@ -1,5 +1,5 @@
 ---
-title: "validation of Ancestry HMM using Lostruct"
+title: "Validation of Ancestry HMM using Lostruct"
 author: "Maya Wilson Brown"
 date: "2024-03-14"
 output: html_document
@@ -31,6 +31,469 @@ ny_names <- wgs[which(wgs$citation == "R.Panko"),"vcf_sample_name"]
 
 k3pops <- k3pops %>% mutate(k3pop_sm = case_when(vcf_sample_name %in% ny_names ~ "NYC",
                                                       .default = k3population))
+```
+
+### Introgressed region frequency
+This section uses the generated .bed files from each *Capsella bursa-pastoris* individual and **multi-inter** from BEDTools
+
+```{bash, code = readLines("~/Documents/PhD/Research/capsella_introgression/multiinter.sh"), eval = FALSE}
+```
+
+Let's take a look at the output
+```{r}
+# load multi inter output file
+nyc_inter <- read.csv(paste0("~/Documents/PhD/Research/capsella_introgression/nyc_multiinter_rubella.txt"), header = T, sep = "\t")
+
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "X") #remove directory info
+colnames(nyc_inter) <- str_remove(colnames(nyc_inter), "_NYC_rubella.bed") #remove other info
+
+# relevel factors
+nyc_inter$chrom <- factor(nyc_inter$chrom, levels = paste0("jlSCF_", 9:16))
+```
+
+```{r NY Crubella chunks gradient}
+# mistyrose = #FFE4E1, violetred4 = #8B2252
+# gradient plot where darker colors mean more individuals share an introgressed chunk
+# ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + ggtitle("New York introgressed region frequency") + theme_classic()
+
+ggplot() + geom_segment(data = nyc_inter[,1:4], aes(colour= num, x=start, xend=end, y=chrom, yend=chrom), linewidth = 10) + scale_y_discrete(labels = paste0("chr ", 9:16)) + scale_color_scico(palette = 'acton', direction = -1) + theme_classic() + labs(title = "New York introgressed region frequency", colour = "individuals", x = NULL, y = "position")
+
+ggsave(paste0(temp_plotdir,"nyc_introgressed_freq.png"), units = "in", height = 6, width = 12)
+```
+
+Let's look at the distributions of individuals that share chunks for each scaffold to get a better idea of how common is common for each scaffold.
+```{r}
+ggplot() + geom_histogram(data = nyc_inter[,1:4], binwidth = 1, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
+  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
+```
+
+Now again with the Mediterranean samples
+```{r mediterranean, eval=FALSE}
+# load file
+mena_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/mena_multiinter_rubella.txt")
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(mena_inter) <- str_remove(colnames(mena_inter), "X") #remove directory info
+colnames(mena_inter) <- str_remove(colnames(mena_inter), "_MENA_rubella.bed") #remove other info
+
+# relevel factors
+mena_inter$chrom <- factor(mena_inter$chrom, levels = paste0("jlSCF_", 9:16))
+```
+
+```{r}
+
+# gradient plot where darker colors mean more individuals share an introgressed chunk
+ggplot() + geom_segment(data = mena_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + theme_classic() + scale_x_discrete(labels = paste0("chr ", 9:16)) + labs(title = "Middle East and Mediterranean introgressed region frequency", colour = "individuals", x = NULL, y = "position")
+
+ggsave(paste0(temp_plotdir,"mena_introgressed_freq.png"), units = "in", height = 12, width = 12)
+```
+I will plot the N. European separately just for posterity but I am really more interested in the shared and private regions.
+
+```{r mediterranean, eval=FALSE}
+# load file
+neu_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/neu_multiinter_rubella.txt")
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(neu_inter) <- str_remove(colnames(neu_inter), "X") #remove directory info
+colnames(neu_inter) <- str_remove(colnames(neu_inter), "_N_Europe_rubella.bed") #remove other info
+
+# relevel factors
+neu_inter$chrom <- factor(neu_inter$chrom, levels = paste0("jlSCF_", 9:16))
+```
+
+```{r}
+
+# gradient plot where darker colors mean more individuals share an introgressed chunk
+ggplot() + geom_segment(data = neu_inter[,1:4], aes(colour= num, x=chrom, xend=chrom, y=start, yend=end), linewidth = 10) + scale_color_continuous(high = "violetred4", low = "mistyrose") + theme_classic() + scale_x_discrete(labels = paste0("chr ", 9:16)) + labs(title = "N. Eurasian introgressed region frequency", colour = "individuals", x = NULL, y = "position")
+
+ggsave(paste0(temp_plotdir,"neu_introgressed_freq.png"), units = "in", height = 12, width = 12)
+```
+##### MultiInter by K4 group
+An easy way to figure out which regions are shared by all of the groups and private to each group is to do the multi-inter analysis on all of the capsella bursa-pastoris in the European lineage.
+
+```{r}
+# load file
+all_inter <- read.delim("~/Documents/PhD/Research/capsella_introgression/all_multiinter_rubella.txt")
+
+# You can pass sample names to BEDtools but I will just fix them here
+colnames(all_inter) <- str_remove(colnames(all_inter), "X") #remove directory info
+
+# column names to match individuals to numbers in small multi-inter df
+all_names <- colnames(all_inter[6:length(colnames(all_inter))])
+
+# save indices for each population
+nyc_indx <- which(grepl( "NYC_rubella.bed", all_names, fixed = TRUE))
+neu_indx <- which(grepl( "N_Europe_rubella.bed", all_names, fixed = TRUE))
+mena_indx <- which(grepl( "MENA_rubella.bed", all_names, fixed = TRUE))
+```
+
+Now I would like to determine a series of tests
+
+```{r}
+# distribution of region sharing
+ggplot() + geom_histogram(data = all_inter[,1:4], binwidth = 5, aes(x=num)) + facet_wrap(~chrom, scales = "free_y") +
+  xlab("number of genotypes") + ggtitle("Genotypes sharing introgressed regions") + theme_bw()
+```
+##### High Frequency shared regions
+```{r}
+#regions shared by all
+all_inter[which(all_inter$num == 101), 1:4]
+```
+
+
+There is one 4000bp region on chromosome 12 that is shared by all the introgressed populations individuals. This region is know of note for population genetic studies as it should be pretty old to be shared among all.
+
+It would be useful to be able to plot these things on top of one another
+```{r}
+#tuncate df
+sm_all_inter <- all_inter[,1:5]
+
+all_int_mat <- str_split_fixed(all_inter$list, ",", n=100)
+
+#forcing matrix to numeric fills blanks with NA
+class(all_int_mat) <- "numeric"
+
+#combine
+test <- cbind(sm_all_inter, data.frame(all_int_mat))
+
+#pivot longer
+test2 <- pivot_longer(test, cols = c(paste0("X", 1:100)), values_drop_na = T)
+
+# check the last row of each segment is the same number as name?
+```
+
+Now to drop name column and assign population to each integer
+```{r}
+# drop name column
+test2 <- subset(test2, select = -c(name, list))
+
+# new column where indices indicate population
+test3 <- test2 %>% mutate(population = case_when(value %in% nyc_indx ~ "NYC",
+                                        value %in% neu_indx ~ "N. Europe",
+                                        value %in% mena_indx ~ "MENA"))
+```
+
+Just working with one dataset at a time
+```{r}
+ggplot() + geom_linerange(data = test3, aes(x=population, ymin=start, ymax=end, color = num), linewidth = 5)+ coord_flip() + facet_wrap(~chrom, scales = "free", nrow = 8)
+
+#ggsave("~/Desktop/test_plot1.png", width = 5, height = 11)
+```
+
+Once I have the above, then maybe I can split it into dataframes?
+```{r}
+test4 <- split(test3, test3$population)
+```
+
+
+```{r}
+#withggnewscale
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + facet_wrap(~chrom, scales = "free", nrow = 8) + coord_flip() +
+  geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_scico("acton", direction=-1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = light.brown) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = greens)
+
+ggsave("~/Desktop/test_plot2.png", width = 5, height = 11)
+```
+As mentioned above, it is actually more intuitive to me and beneficial to have each population on their own number scale. I will achieve that by joining the dfs?
+
+```{r}
+# add population indicators to all
+nyc_inter$population <- "NYC metro"
+neu_inter$population <- "N. Eurasia"
+mena_inter$population <- "Med"
+
+# combine the relevant part of the dfs
+c_inter <- list(nyc_inter[,c("chrom","start","end","num","population")],neu_inter[,c("chrom","start","end","num","population")],mena_inter[,c("chrom","start","end","num","population")])
+```
+
+Attempt to generate plot?
+```{r}
+# make vector of pretty chromosome names
+pretty_chrom <- paste0("Chr. ", 9:16)
+names(pretty_chrom) <- paste0("jlSCF_", 9:16)
+```
+
+```{r}
+#withggnewscale and scico color pallets
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + 
+  facet_wrap(~chrom, scales = "free", nrow =2, ncol = 4,
+             labeller = labeller(chrom = pretty_chrom)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 4), legend.position = "right") + 
+  labs(colour = "NYC Metro\nindividuals") +
+  geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'acton', direction = -1) +
+  new_scale_color() +
+  geom_linerange(data = c_inter[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'bamako', direction = -1) +
+  labs(colour = "N. Eurasia\nindividuals") +
+  new_scale_color() + 
+  labs(colour = "Mediterranean\nindividuals") +
+  geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1)
+
+#ggsave("~/Desktop/introgression_plot_allscf_legend_side.png", width = 11, height = 5.5)
+```
+With different colors
+```{r}
+#withggnewscale and scico color pallets
+ggplot(mapping = aes(x=population, ymin=start, ymax=end)) + 
+  facet_wrap(~chrom, scales = "free", nrow =2, ncol = 4,
+             labeller = labeller(chrom = pretty_chrom)) + 
+  coord_flip() +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 4), legend.position = "bottom") + 
+  labs(colour = "NYC Metro\nindividuals") +
+  geom_linerange(data = c_inter[[1]], linewidth = 5, aes(color = num)) +
+  scale_color_scico(palette = 'acton', direction = -1) +
+  new_scale_color() +
+  geom_linerange(data = c_inter[[2]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = greens) +
+  labs(colour = "N. Eurasia\nindividuals") +
+  new_scale_color() + 
+  labs(colour = "Mediterranean\nindividuals") +
+  geom_linerange(data = c_inter[[3]], linewidth = 5, aes(color = num)) +
+  scale_color_gradientn(colors = light.brown)
+
+ggsave("~/Desktop/introgression_plot_allscf_legend_bottom_new_colors.png", width = 11, height = 5.5)
+```
+
+
+
+Attempt to indicate windows corresponding to Lostruct analysis
+```{r}
+# only scaffold 9 for now
+c_inter[[4]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_9")
+c_inter[[5]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_9")
+c_inter[[6]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_9")
+
+# only scaffold 10 for now
+c_inter[[7]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_10")
+c_inter[[8]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_10")
+c_inter[[9]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_10")
+
+# only scaffold 14
+inter14 <- list()
+inter14[[1]] <- c_inter[[1]] %>% filter(chrom == "jlSCF_14")
+inter14[[2]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_14")
+inter14[[3]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_14")
+```
+
+```{r}
+#withggnewscale and scico color pallets and windows indicated
+ggplot() + theme_classic()+
+  coord_flip() +
+  geom_linerange(data = c_inter[[4]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lapaz', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[5]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'bamako', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[6]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1) +
+  ggtitle("Scaffold 9")
+#ggsave("~/Desktop/scaffold9_windows.png", width = 5, height = 5)
+```
+Now with windows in the plot
+
+The way the Lostruct eigen windows function works is that the win argument considers a window to be consecutive rows of the given matrix. So it is calucating eigenvectors at each consecutive 3000 SNPs (in the case of Scaffold 9).
+
+I want to align those SNP positions with BP positions for the plot above
+```{r}
+# Just generate df indicating window start and end row numbers
+row_sind <- seq(from = 1, to = nrow(sc10), by = 1000)
+row_eind <- c(seq(from = 1, to = nrow(sc10), by = 1000)-1)[2:length(row_sind)]
+winds <- data.frame(start = row_sind[-38], end = row_eind) #rows for extracting bp positions from names
+
+# from the row names, get the staring and ending bp positions
+bp_ends <- as.numeric(str_remove(rownames(sc10)[winds$end], "jlSCF_10_"))
+bp_beg <- as.numeric(str_remove(rownames(sc10)[winds$start], "jlSCF_10_"))
+
+breaks <- data.frame(start = bp_beg, end = bp_ends)
+```
+
+```{r}
+# adding geoms
+base_med <- ggplot() + geom_rect(data = breaks,
+            aes(ymin = start[3],
+                ymax = end[3],
+                xmin = - Inf,
+                xmax = Inf),
+            alpha = 0.5,
+            fill = "#a9ba9d") + 
+  coord_flip() + 
+  theme_classic() +
+  geom_linerange(data = c_inter[[6]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1)
+```
+
+Attemping with all populations
+```{r}
+# Scaffold 10 windows for examples
+ggplot() + 
+  coord_flip() + 
+  theme_classic() +
+  ggtitle("Chr. 10 Window 34") +
+  theme(axis.text.x = element_text(size = 4), legend.position = "none") +
+  geom_rect(data = breaks,
+            aes(ymin = start[34],
+                ymax = end[34],
+                xmin = - Inf,
+                xmax = Inf),
+            alpha = 0.5,
+            fill = "lightgrey") +
+  geom_linerange(data = c_inter[[7]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'acton', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[8]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_gradientn(colors = greens) +
+  new_scale_color() + 
+  geom_linerange(data = c_inter[[9]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_gradientn(colors = light.brown)
+
+ggsave("~/Desktop/scaffold10_window34.png", width = 5, height = 2)
+```
+What about all of them?
+```{r}
+# adding geoms
+ggplot() + 
+  coord_flip() + 
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 4), legend.position = "none") +
+  geom_rect(data = subset(seg_nyc_only, chrom == "jlSCF_14"),
+            aes(ymin = start,
+                ymax = end,
+                xmin = - Inf,
+                xmax = Inf),
+            alpha = 0.5,
+            fill = "#a9ba9d") +
+  geom_linerange(data = inter14[[1]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lapaz', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = inter14[[2]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'bamako', direction = -1) +
+  new_scale_color() + 
+  geom_linerange(data = inter14[[3]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1)
+  
+```
+
+```{r}
+# first, regions where any element of nyc is present and elements of mena and europe are not
+nyc_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, nyc_indx)) >= 1, "in NYC", NA)
+})
+```
+There is another group which I may be interested in, which is the NJ population by itself. That's population 24 and I can print the names to know they correspond to indices 43,44,45
+```{r}
+nj_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, 43:45)) >= 1, "in NJ", NA)
+})
+```
+
+There is a more elegant way to do this (probably with casewhen) but I can fix that later. The plan is to get a vector of region status for each population
+```{r}
+# middle east and north africa
+mena_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, mena_indx)) >= 1, "in MENA", NA)
+})
+
+# Europe
+neu_status <- apply(all_inter["list"], 1, function(x){
+# for each row, take the value of column 'list' and make it a vector and split elements into characters
+el <- str_split_1(x, ",")
+# make the character vector numeric
+nel <- as.numeric(el)
+# check if the region is private to a group
+ifelse(sum(intersect(nel, neu_indx)) >= 1, "in N. Europe", NA)
+})
+
+# combine them
+chunk_status <- data.frame(nyc_status,nj_status,mena_status,neu_status)
+
+ind <- rowSums(is.na(chunk_status)) == ncol(chunk_status)
+ind2 <- rowSums(is.na(all_stat[,6:8])) == ncol(all_stat[,6:8])
+```
+
+Bind with actual bed data and check which regions are in or out of each population
+```{r}
+all_stat <- cbind(all_inter[,1:5], chunk_status )
+```
+
+```{r}
+# filter keeps rows that match a condition
+# keep rows where europe and mena are NA (implying nyc is not, because I do not have empty regions)
+seg_nyc_only <- all_stat %>%
+   filter(if_all(c(mena_status,neu_status), is.na))
+
+# present in NY/NJ and Europe; absent from MENA
+seg_nyc_eu <- all_stat %>%
+   filter(!(if_any(c(nyc_status, neu_status), is.na)) & is.na(mena_status))
+
+# present in NY/NJ and MENA; absent from Europe
+seg_nyc_mena <- all_stat %>%
+   filter(!(if_any(c(nyc_status, mena_status), is.na)) & is.na(neu_status))
+
+# present in NJ and Europe, which may drive the relationship between the two
+seg_nj_neu <- all_stat %>%
+   filter(!(if_any(c(nj_status, neu_status), is.na)) & is.na(mena_status))
+
+# only in NJ (of which NY is inclusive)
+#seg_nj <- all_stat %>%
+   #filter(!is.na(nj_status) & if_all(c(neu_status, mena_status), is.na))
+
+# private to NJ (not found elsewhere in NY)
+seg_nj[which(seg_nj$num <= 3),]
+```
+There are `r nrow(seg_nyc_only)` introgressed regions only found in NYC, that have not been sampled in the MENA nor the N. European population.
+
+There are introgressed regions that are only found in NJ and a sample in the Mediterranean population (namely KYRG-3-14, which is index 97 in this data): number = `r nrow(which(seg_nyc_mena$num ==4 & seg_nyc_mena$list == c(43,44,45,97)`
+
+Visual inspection of the data shows there are only two regions that are in the N. European group and NJ and not in the rest of NYC, and those are two regions on scaffold 15
+```{r}
+seg_nj_neu[107:108,]
+
+seg_nj_neu[107:108,"end"] - seg_nj_neu[107:108,"start"]
+```
+4k and 12k bp respectively.
+
+Let's plot NYC only regions:
+```{r}
+nyc_private_hist <- ggplot() + geom_histogram(data = seg_nyc_only, aes(num)) +
+  theme_classic() +
+  xlab("individuals")
+
+ggsave("~/Desktop/nyc_private_hist.png",nyc_private_hist, width = 5, height = 2)
+```
+
+
+```{r}
+nyc_private_vio <- ggplot() + geom_boxplot(data = seg_nyc_only, aes(bp)) +
+  theme_classic() +
+  xlab("length (base pairs)")
+
+ggsave("~/Desktop/nyc_private_boxplot.png",nyc_private_vio, width = 5, height = 2)
 ```
 
 Join and keep only necessary information

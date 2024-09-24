@@ -5,6 +5,7 @@
 # scratch notes
 # light.brown <- c("#f3cea9","#330000")
 # greens <- c("#E5FFC5","#002C00")
+
 ##### Setup In/Out----------
 # Colors for plotting
 anc.cols <- c(bursa_pastoris = "#6D9636", rubella = "#FFCCFD", heterozygous = "#96938E")
@@ -30,8 +31,9 @@ pop.labels <- c('E_Asia' = "E. Asia",
                 'Capsella\ bursa-pastoris' = "C. bursa-pastoris")
 
 # paths
-ahmm_vit_path = "~/Documents/PhD/Research/capsella_introgression/ahmm_output/"
+ahmm_vit_path <- "~/Documents/PhD/Research/capsella_introgression/ahmm_output/"
 temp_plotdir <- "~/Documents/PhD/Research/capsella_introgression/alt_plots_temp/"
+plot_dir <- "~/Documents/PhD/Research/capsella_introgression/plots/"
 bed_files <- "~/Documents/PhD/Research/capsella_introgression/bed_files/"
 
 ## pretty chromosome names for facets
