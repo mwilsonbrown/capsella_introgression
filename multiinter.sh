@@ -18,7 +18,7 @@
 #
 #
 # move to correct directory
-cd /mnt/scratch/wils1582/bed_files/
+cd /mnt/home/wils1582/capsella_introgression/bed_files/
 
 #####VARS
 OUTDIR=/mnt/home/capsella_introgression
@@ -28,6 +28,6 @@ module purge
 module load BEDTools/2.31.0-GCC-12.3.0
 
 # output list of overlap of segments
-bedtools multiinter -header -i *NY_rubella.bed > "$OUTDIR"/ny_multiinter_rubella.txt
+bedtools multiinter -header -i *NYC_rubella.bed > "$OUTDIR"/nyc_multiinter_rubella.txt
 bedtools multiinter -header -i *N_Europe_rubella.bed > "$OUTDIR"/neu_multiinter_rubella.txt
 bedtools multiinter -header -i *MENA_rubella.bed > "$OUTDIR"/mena_multiinter_rubella.txt

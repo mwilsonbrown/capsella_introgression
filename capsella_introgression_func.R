@@ -3,8 +3,8 @@
 # July 24, 2024
 
 # scratch notes
-# light.brown <- c("#f3cea9","#330000")
-# greens <- c("#E5FFC5","#002C00")
+light.brown <- c("#f3cea9","#330000")
+greens <- c("#E5FFC5","#002C00")
 
 ##### Setup In/Out----------
 # Colors for plotting
