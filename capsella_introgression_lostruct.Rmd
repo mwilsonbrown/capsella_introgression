@@ -196,7 +196,7 @@ nyc_rubella_chr <- split(nyc_rubella[3:258], nyc_rubella[1])
 #test <- data.matrix(nyc_rubella[3:258])
 
 # make all data tabled matrices
-test <- lapply(nyc_rubella_chr, data.matrix)
+genomat <- lapply(nyc_rubella_chr, data.matrix)
 ```
 
 I can either pass the numeric matrix directly to eigen_windows or write a window extraction function that returns the numeric matrix of a specific window. I will try to write a window extractor function.
@@ -208,7 +208,7 @@ My first idea is to assign a window ID to any location where the last bp of the 
 Just work with Scaffold 10 for the time being.
 ```{r, eval = F}
 # scaffold 10 matrix
-scf10m <- test[[1]]
+scf10m <- genomat[[1]]
 
 # grab rownames and drop the scaffold indicator
 rnames <- as.integer(str_remove_all(rownames(scf10m), paste0("jlSCF_", "10", ":")))
@@ -222,7 +222,7 @@ Kind of silly to write my own window extractor function when all of the SNPs in 
 
 ```{r calculate eigens for windows on scaffold 10}
 # ON scaffold 10, extract windows of 100 continuous SNPs (rows of matrix)
-s10_100snp <- lostruct::eigen_windows(data = test[["jlSCF_10"]],
+s10_100snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
               win = 100,
               k=2)
 ```
@@ -242,123 +242,32 @@ pca10_long <- pca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(i
 pca10_long$window <- factor(pca10_long$window, levels = 1:length(unique(pca10_long$window)))
 ```
 
+# Plots
 ```{r}
 pc_plot1 <- ggplot() +
-  geom_point(data=subset(lpcascf10_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% as.character(1:20)), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
 
 pc_plot1
 ```
-
-
 ```{r}
-# calculate eigenvals and vecs for windows of size 3000 bp on scaffold 9
-eigen9 <- lostruct::eigen_windows(data = sc9,
-              win = 1000,
-              k=2)
-eigen10 <- lostruct::eigen_windows(data = sc10,
-              win = 1000,
-              k=2)
-
-eigen14 <- lostruct::eigen_windows(data = sc14,
-              win = 1000,
-              k=2)
+ggsave(paste0(plot_dir, "lostruct_pca_scf10_w1-20.png"), pc_plot1, width = 10, height = 6, units = "in")
 ```
 
-Testing with apply
-```{r}
-eigen_list <- lapply(scf_ls, lostruct::eigen_windows, win=3000, k=2)
-```
-
-# Plots??
-The first window of scaffold 9 should be C. rubella for all of the NYC individuals. I think?
-Now I apply the function to each row so each row (representing the results from a window) are each in a data frame stored in a list.
-```{r}
-# apply data reformatting function to output
-lpca9 <- apply(eigen9, 1, reform_map, dat = eigen9)
-```
-
-Pivot longer to plot them all at once
-```{r}
-lpca9_long <- bind_rows(lpca9, .id = "window")
-```
-
-fill in NA for population
-```{r}
-# lpca9_long$k3population <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
-# lpca9_long$k3pop_sm <- tidyr::replace_na(lpca9_long$k3population, "Other Sp.")
-
-lpca9_long <- lpca9_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
-```
-
-Make windows factors easily
-```{r}
-lpca9_long$window <- factor(lpca9_long$window, levels = 1:length(unique(lpca9_long$window)))
-```
-
-
-```{r}
-pc_plot1 <- ggplot() +
-  geom_point(data=subset(lpca9_long, k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
-
-pc_plot1
-
-ggsave("lostruct_pca_scf9_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
-```
-
-
-```{r}
-pc_plot2 <- ggplot() +
-  geom_point(data=lpca9[[2]], aes(x=PC1, y=PC2, color = species), size = 3) +
-  theme_bw()
-
-pc_plot2
-```
-
-```{r}
-# apply data reformatting function to output
-lpca10 <- apply(eigen10, 1, reform_map, dat = eigen10)
-```
-
-Pivot longer to plot them all at once
-```{r}
-lpca10_long <- bind_rows(lpca10, .id = "window")
-```
-
-fill in NA for population
-```{r}
-lpca10_long <- lpca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
-```
-
-Make windows factors easily
-```{r}
-lpca10_long$window <- factor(lpca10_long$window, levels = 1:length(unique(lpca10_long$window)))
-```
-
-```{r}
-pc_plot1 <- ggplot() +
-  geom_point(data=lpca10_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
-
-pc_plot1
-
-#ggsave("lostruct_pca_scf10_transparent.png", pc_plot1, width = 10, height = 6, units = "in")
-```
 Single window at a time blown up
 ```{r}
 sc10w34 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 34 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  geom_point(data=subset(pca10_long, window == 34 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
   theme(strip.background =element_rect(fill="lightgrey"),
         strip.text = element_text(size = 15))
 sc10w34
+```
 
-ggsave("lostruct_pca_scf10_window34.png", sc10w34, width = 7, height = 5, units = "in")
+```{r}
+ggsave(paste0(plot_dir,"lostruct_pca_scf10_window34.png"), sc10w34, width = 7, height = 5, units = "in")
 ```
 
 ```{r}
