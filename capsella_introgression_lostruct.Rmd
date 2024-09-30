@@ -190,7 +190,7 @@ colnames(nyc_rubella) <- c("chrom", "pos", samples)
 rownames(nyc_rubella) <- paste(nyc_rubella$chrom, nyc_rubella$pos, sep = ":")
 
 # split by chromosome
-nyc_rubella_chr <- split(nyc_rubella[3:258], nyc_rubella[1])
+nyc_rubella_chr <- split(nyc_rubella[3:ncol(nyc_rubella)], nyc_rubella[1])
 # split by chromosome, but keep the names
 nyc_rubella_chr_snps <- split(nyc_rubella[1:2], nyc_rubella[1])
 
@@ -221,21 +221,50 @@ Kind of silly to write my own window extractor function when all of the SNPs in 
 
 ```{r calculate eigens for windows on scaffold 10}
 # ON scaffold 10, extract windows of 100 continuous SNPs (rows of matrix)
-s10_100snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
-              win = 100,
+s10_500snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
+              win = 500,
               k=2)
+# drop rows that are NA here as they correspond to windows without values
+idx <- apply(s10_500snp, 1, function(x) all(is.na(x))) #returns T for completely empty rows
+s10_500snp <- s10_500snp[!idx,] # actually drops those rows
 
-# go back to the names list and assign them windows?
-winds <- rep(1:5000, each = 100, length.out = nrow(genomat[["jlSCF_10"]])) #the end of rep is not important and should just be a sufficiently large number; each is the number passed to win in eigen_windows, and length.out should be the number of rows in the matrix
-
-# combine with SNP location data
-windows <- cbind(nyc_rubella_chr_snps[["jlSCF_10"]], as.character(winds))
+dropped.windows <- which(idx)
 ```
 
+```{r}
+# go back to the names list and assign them windows?
+winds <- rep(1:5000, each = 500, length.out = nrow(genomat[["jlSCF_10"]])) #the end of rep is not important and should just be a sufficiently large number; each is the number passed to win in eigen_windows, and length.out should be the number of rows in the matrix
+
+# combine with SNP location data
+windows <- cbind(nyc_rubella_chr_snps[["jlSCF_10"]], window = as.character(winds))
+```
+
+```{r}
+# tetsing with reproducible example
+df <- as.matrix(data.frame(team=c(1:5, NA),
+                 points=c(99, 90, 86, 88, NA, NA),
+                 assists=c(33, NA, 31, 39, NA, NA),
+                 rebounds=c(NA, 28, 24, 24, NA, NA)))
+
+# trying with indexing
+dropped_windows <- apply(df, 1, function(x) all(is.na(x)))
+df2 <- df[!dropped_windows,]
+
+# use dplyr to remove the last row
+
+
+df %>% filter_at(vars(-team), all_vars(!is.na(.)))
+
+
+df[rowSums(is.na(df)) != ncol(m), ]
+```
 
 ```{r reformat eigeninfo for scaffold 10}
 # apply reformatting function to each row of output matrix
-pca10 <- apply(s10_100snp, 1, reform_map, dat = s10_100snp)
+pca10 <- apply(s10_500snp, 1, reform_map, dat = s10_500snp)
+
+#rename the list elements by their window
+names(pca10) <- as.character(which(idx == F))
 
 # unroll list into long data frame
 pca10_long <- bind_rows(pca10, .id = "window")
@@ -243,38 +272,41 @@ pca10_long <- bind_rows(pca10, .id = "window")
 # if no population information present, fill population columns with species
 pca10_long <- pca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
 
-
 # make the windows a factor
-pca10_long$window <- factor(pca10_long$window, levels = 1:length(unique(pca10_long$window)))
+pca10_long$window <- factor(pca10_long$window, levels = as.character(which(idx == F)))
 ```
 
 # Plots
 ```{r}
 pc_plot1 <- ggplot() +
-  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% as.character(1:20)), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% as.character(c(1:names(pca10)[20]))), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
 
 pc_plot1
 ```
+
+
 ```{r}
-ggsave(paste0(plot_dir, "lostruct_pca_scf10_w1-20.png"), pc_plot1, width = 10, height = 6, units = "in")
+ggsave(paste0(plot_dir, "lostruct_pca_scf10_w1-20_noempty.png"), pc_plot1, width = 10, height = 6, units = "in")
 ```
 
 Single window at a time blown up
 ```{r}
-sc10w34 <- ggplot() +
-  geom_point(data=subset(pca10_long, window == 34 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+sc10w19 <- ggplot() +
+  geom_point(data=subset(pca10_long, window == "19" & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
   theme(strip.background =element_rect(fill="lightgrey"),
         strip.text = element_text(size = 15))
-sc10w34
+sc10w19
 ```
 
 ```{r}
-ggsave(paste0(plot_dir,"lostruct_pca_scf10_window34.png"), sc10w34, width = 7, height = 5, units = "in")
+ggsave(paste0(plot_dir,"lostruct_pca_scf10_window19.png"), sc10w19, width = 7, height = 5, units = "in")
 ```
+
+To link these plots to the introgression results, now we combine the introgression plots above with shaded windows for the start and end SNPs
 
 ```{r}
 sc10w10 <- ggplot() +
