@@ -191,11 +191,10 @@ rownames(nyc_rubella) <- paste(nyc_rubella$chrom, nyc_rubella$pos, sep = ":")
 
 # split by chromosome
 nyc_rubella_chr <- split(nyc_rubella[3:258], nyc_rubella[1])
+# split by chromosome, but keep the names
+nyc_rubella_chr_snps <- split(nyc_rubella[1:2], nyc_rubella[1])
 
-# change to matrix
-#test <- data.matrix(nyc_rubella[3:258])
-
-# make all data tabled matrices
+# make all data tables matrices
 genomat <- lapply(nyc_rubella_chr, data.matrix)
 ```
 
@@ -225,6 +224,12 @@ Kind of silly to write my own window extractor function when all of the SNPs in 
 s10_100snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
               win = 100,
               k=2)
+
+# go back to the names list and assign them windows?
+winds <- rep(1:5000, each = 100, length.out = nrow(genomat[["jlSCF_10"]])) #the end of rep is not important and should just be a sufficiently large number; each is the number passed to win in eigen_windows, and length.out should be the number of rows in the matrix
+
+# combine with SNP location data
+windows <- cbind(nyc_rubella_chr_snps[["jlSCF_10"]], as.character(winds))
 ```
 
 
@@ -237,6 +242,7 @@ pca10_long <- bind_rows(pca10, .id = "window")
 
 # if no population information present, fill population columns with species
 pca10_long <- pca10_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
+
 
 # make the windows a factor
 pca10_long$window <- factor(pca10_long$window, levels = 1:length(unique(pca10_long$window)))

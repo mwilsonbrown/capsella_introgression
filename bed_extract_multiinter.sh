@@ -20,7 +20,7 @@ sed -i '1d' nyc_cbp.bed
 # because regions file had '.bed' suffix, regions are considered 0-based, half open
 # exclude Neslia paniculata, but leave in all other samples.
 
-bcftools query -f '%CHROM\t%POS[\t%GT]\n' /mnt/home/wils1582/ahmm_pruned_all.vcf.gz \
+bcftools query -f '%CHROM\t%POS[\t%GT]\n' /mnt/scratch/wils1582/july15/CBP_CRCG_final_filtered.vcf.gz \
   --regions-file nyc_cbp.bed \
   --samples ^'ERR2990308.sam' |sed -e 's_|_/_g' > nyc_rubella_unphased_vcf.txt
 
