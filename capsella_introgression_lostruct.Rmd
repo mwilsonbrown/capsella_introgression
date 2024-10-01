@@ -239,26 +239,6 @@ winds <- rep(1:5000, each = 500, length.out = nrow(genomat[["jlSCF_10"]])) #the 
 windows <- cbind(nyc_rubella_chr_snps[["jlSCF_10"]], window = as.character(winds))
 ```
 
-```{r}
-# tetsing with reproducible example
-df <- as.matrix(data.frame(team=c(1:5, NA),
-                 points=c(99, 90, 86, 88, NA, NA),
-                 assists=c(33, NA, 31, 39, NA, NA),
-                 rebounds=c(NA, 28, 24, 24, NA, NA)))
-
-# trying with indexing
-dropped_windows <- apply(df, 1, function(x) all(is.na(x)))
-df2 <- df[!dropped_windows,]
-
-# use dplyr to remove the last row
-
-
-df %>% filter_at(vars(-team), all_vars(!is.na(.)))
-
-
-df[rowSums(is.na(df)) != ncol(m), ]
-```
-
 ```{r reformat eigeninfo for scaffold 10}
 # apply reformatting function to each row of output matrix
 pca10 <- apply(s10_500snp, 1, reform_map, dat = s10_500snp)
@@ -310,61 +290,33 @@ To link these plots to the introgression results, now we combine the introgressi
 
 ```{r}
 sc10w10 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 10 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  geom_point(data=subset(pca10_long, window == 10 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
   theme(strip.background =element_rect(fill="lightgrey"),
         strip.text = element_text(size = 15))
 
 sc10w10
+```
 
+```{r}
 ggsave("lostruct_pca_scf10_window10.png", sc10w10, width = 7, height = 5, units = "in")
 ```
 
 ```{r}
 sc10w12 <- ggplot() +
-  geom_point(data=subset(lpca10_long, window == 12
-                         ), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  theme_classic() + facet_wrap(~window)
+  geom_point(data=subset(pca10_long, window == 12 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
+sc10w12
+```
 
+```{r}
 ggsave("lostruct_pca_scf10_window12.png", sc10w12, width = 10, height = 6, units = "in")
 ```
 
-Scaffold 14
-For an example of NYC CBP alone
-
-Prep the data
-
-```{r}
-# apply data reformatting function to output
-lpca14 <- apply(eigen14, 1, reform_map, dat = eigen14)
-```
-
-Pivot longer to plot them all at once
-```{r}
-lpca14_long <- bind_rows(lpca14, .id = "window")
-```
-
-fill in NA for population
-```{r}
-lpca14_long <- lpca14_long %>% mutate(across(c(k3population, k3pop_sm), ~ ifelse(is.na(.x), species, .x)))
-```
-
-Make windows factors easily
-```{r}
-lpca14_long$window <- factor(lpca14_long$window, levels = 1:length(unique(lpca14_long$window)))
-```
-
-```{r}
-plt <- ggplot() +
-  geom_point(data=lpca14_long, aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
-  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
-  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
-
-plt
-
-ggsave("lostruct_pca_scf14_transparent.png", plt, width = 10, height = 6, units = "in")
-```
 ### Joining plots
 
 Attempt to indicate windows corresponding to Lostruct analysis
@@ -386,65 +338,60 @@ inter14[[2]] <- c_inter[[2]] %>% filter(chrom == "jlSCF_14")
 inter14[[3]] <- c_inter[[3]] %>% filter(chrom == "jlSCF_14")
 ```
 
-```{r}
-#withggnewscale and scico color pallets and windows indicated
-ggplot() + theme_classic()+
-  coord_flip() +
-  geom_linerange(data = c_inter[[4]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'lapaz', direction = -1) +
-  new_scale_color() + 
-  geom_linerange(data = c_inter[[5]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'bamako', direction = -1) +
-  new_scale_color() + 
-  geom_linerange(data = c_inter[[6]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'lajolla', direction = -1) +
-  ggtitle("Scaffold 9")
-#ggsave("~/Desktop/scaffold9_windows.png", width = 5, height = 5)
-```
-Now with windows in the plot
-
-The way the Lostruct eigen windows function works is that the win argument considers a window to be consecutive rows of the given matrix. So it is calucating eigenvectors at each consecutive 3000 SNPs (in the case of Scaffold 9).
+The way the Lostruct eigen windows function works is that the win argument considers a window to be consecutive rows of the given matrix. So it is calculating eigenvectors at each consecutive 500 SNPs
 
 I want to align those SNP positions with BP positions for the plot above
+
 ```{r}
-# Just generate df indicating window start and end row numbers
-row_sind <- seq(from = 1, to = nrow(sc10), by = 1000)
-row_eind <- c(seq(from = 1, to = nrow(sc10), by = 1000)-1)[2:length(row_sind)]
-winds <- data.frame(start = row_sind[-38], end = row_eind) #rows for extracting bp positions from names
-
-# from the row names, get the staring and ending bp positions
-bp_ends <- as.numeric(str_remove(rownames(sc10)[winds$end], "jlSCF_10_"))
-bp_beg <- as.numeric(str_remove(rownames(sc10)[winds$start], "jlSCF_10_"))
-
-breaks <- data.frame(start = bp_beg, end = bp_ends)
+# summarize the SNP table by window, just to get a min and max value
+sc10_breaks <- windows %>% 
+  summarise(start = min(pos),
+            end = max(pos),
+            .by = window)
 ```
 
 ```{r}
-# adding geoms
-base_med <- ggplot() + geom_rect(data = breaks,
-            aes(ymin = start[3],
-                ymax = end[3],
+# plotting all of the windows created by LOSTRUCT
+base_med <- ggplot() + geom_rect(data = sc10_breaks,
+            aes(ymin = start,
+                ymax = end,
                 xmin = - Inf,
                 xmax = Inf),
             alpha = 0.5,
             fill = "#a9ba9d") + 
   coord_flip() + 
   theme_classic() +
-  geom_linerange(data = c_inter[[6]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  geom_linerange(data = c_inter[[7]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_scico(palette = 'lajolla', direction = -1)
 ```
 
-Attemping with all populations
+```{r}
+# Plotting only the windows selected as not empty
+base_med <- ggplot() + geom_rect(data = subset(sc10_breaks,
+                                               window %in% names(pca10)),
+            aes(ymin = start,
+                ymax = end,
+                xmin = - Inf,
+                xmax = Inf),
+            alpha = 0.5,
+            fill = "#a9ba9d") + 
+  coord_flip() + 
+  theme_classic() +
+  geom_linerange(data = c_inter[[7]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'lajolla', direction = -1)
+```
+
+Attempting with all populations. Windows are a light grey background here
 ```{r}
 # Scaffold 10 windows for examples
 ggplot() + 
   coord_flip() + 
   theme_classic() +
-  ggtitle("Chr. 10 Window 34") +
+  ggtitle("Chr. 10 Windows of 500 SNPs") +
   theme(axis.text.x = element_text(size = 4), legend.position = "none") +
-  geom_rect(data = breaks,
-            aes(ymin = start[34],
-                ymax = end[34],
+  geom_rect(data = subset(sc10_breaks, window %in% names(pca10)),
+            aes(ymin = start,
+                ymax = end,
                 xmin = - Inf,
                 xmax = Inf),
             alpha = 0.5,
@@ -457,33 +404,48 @@ ggplot() +
   new_scale_color() + 
   geom_linerange(data = c_inter[[9]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
   scale_color_gradientn(colors = light.brown)
-
-ggsave("~/Desktop/scaffold10_window34.png", width = 5, height = 2)
 ```
-What about all of them?
+
 ```{r}
-# adding geoms
+ggsave(paste0(plot_dir,"scaffold10_windows500snps.png"), width = 5, height = 2)
+```
+
+
+We can Zoom in on a single window and check our expectations with the local PCA
+```{r}
+# Scaffold 10 window where NYC is not introgressed
 ggplot() + 
   coord_flip() + 
   theme_classic() +
+  ggtitle("Chr. 10 Windows of 500 SNPs") +
   theme(axis.text.x = element_text(size = 4), legend.position = "none") +
-  geom_rect(data = subset(seg_nyc_only, chrom == "jlSCF_14"),
+  geom_rect(data = subset(sc10_breaks, window %in% names(pca10)[103]),
             aes(ymin = start,
                 ymax = end,
                 xmin = - Inf,
                 xmax = Inf),
             alpha = 0.5,
-            fill = "#a9ba9d") +
-  geom_linerange(data = inter14[[1]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'lapaz', direction = -1) +
+            fill = "lightgrey") +
+  geom_linerange(data = c_inter[[7]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_scico(palette = 'acton', direction = -1) +
   new_scale_color() + 
-  geom_linerange(data = inter14[[2]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'bamako', direction = -1) +
+  geom_linerange(data = c_inter[[8]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_gradientn(colors = greens) +
   new_scale_color() + 
-  geom_linerange(data = inter14[[3]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
-  scale_color_scico(palette = 'lajolla', direction = -1)
-  
+  geom_linerange(data = c_inter[[9]], linewidth = 5, aes(x=population, ymin=start, ymax=end, color = num)) +
+  scale_color_gradientn(colors = light.brown)
 ```
+And to look at the corresponding PCA
+```{r}
+sc10w12 <- ggplot() +
+  geom_point(data=subset(pca10_long, window %in% names(pca10)[103] & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
+sc10w12
+```
+
 
 ```{r}
 # first, regions where any element of nyc is present and elements of mena and europe are not
