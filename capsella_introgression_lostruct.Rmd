@@ -259,7 +259,7 @@ pca10_long$window <- factor(pca10_long$window, levels = as.character(which(idx =
 # Plots
 ```{r}
 pc_plot1 <- ggplot() +
-  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% as.character(c(1:names(pca10)[20]))), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[101:120]), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
 
@@ -268,22 +268,22 @@ pc_plot1
 
 
 ```{r}
-ggsave(paste0(plot_dir, "lostruct_pca_scf10_w1-20_noempty.png"), pc_plot1, width = 10, height = 6, units = "in")
+ggsave(paste0(plot_dir, "lostruct_pca_scf10_w101-120_noempty.png"), pc_plot1, width = 10, height = 6, units = "in")
 ```
 
 Single window at a time blown up
 ```{r}
-sc10w19 <- ggplot() +
-  geom_point(data=subset(pca10_long, window == "19" & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+sc10w218 <- ggplot() +
+  geom_point(data=subset(pca10_long, window == "218" & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
   theme(strip.background =element_rect(fill="lightgrey"),
         strip.text = element_text(size = 15))
-sc10w19
+sc10w218
 ```
 
 ```{r}
-ggsave(paste0(plot_dir,"lostruct_pca_scf10_window19.png"), sc10w19, width = 7, height = 5, units = "in")
+ggsave(paste0(plot_dir,"lostruct_pca_scf10_window218.png"), sc10w218, width = 7, height = 5, units = "in")
 ```
 
 To link these plots to the introgression results, now we combine the introgression plots above with shaded windows for the start and end SNPs
