@@ -12,6 +12,7 @@ library(dplyr)
 library(ggplot2)
 library(ggnewscale)
 library(scico)
+library(tidyr)
 ```
 
 
@@ -288,6 +289,33 @@ write.table(allsites_dat[c(1,4)],
 First, I looked at pairwise diversity in each population using sliding windows of 10,000 base pairs across the whole genome.
 
 *ANOTHER THOUGHT*
+### Is the similarity between NYC and N. Eurasian populations driven by similarity in introgressed regions?
+Another way to think about this: can you distingush N. eurasian and Mediterranean populations from one another based soley on alleles in introgressed regions?
+
+I do not expect this to be the case because, k=2 is does not have a low cross validation error rate, the mediterranean population clusters with the E. Asian population, indicating that introgression with C. rubella is not the only thing that distinguishes C. bursa-pastoris population from one another in the ancestral range (which you can also see based on PC1 in the PCA with all C. bursa-pastoris)
+
+To get at this, I want to compare Fst values in introgressed regions between NYC-Northern Eurasia to Fst in introgressed regions NYC-Mediterranean.
+
+```{r}
+# just sloppily documenting what I plan to do here
+# I have the bed file of NYC introgressed regions, and I will chose regions that are 60% or more individuals have
+65*0.6
+
+# so I can filter the rows based on the multiinter output to only contain those regions, and run PIXY on those regions
+# that file is loaded in the lostruct markdown, but that's okay for now
+# I could reasonably do this using unix
+com_nyc <- nyc_inter[which(nyc_inter$num >= 39),]
+
+# write to file for HPCC
+write.table(com_nyc[,1:3], file = "~/Desktop/common_introgressed_nyc.bed",
+            sep = "\t",
+            quote = F,
+            row.names = F,
+            col.names = F)
+
+```
+
+
 Another analysis that may be interesting is to look at PI (pairwise diversity) along the genome within NYC populations to identify regions with higher or lower PI than expected?
 
 But first, I am interested in Dxy comparing NYC regions to other.
@@ -301,12 +329,27 @@ Might want to compare the levels between the Northern European population and th
 
 Using the PIXY documentation function in source file
 ```{r}
+# this is with any region of introgression in NYC
 pixy_folder <- "~/Documents/PhD/Research/capsella_introgression/pixy/"
-pixy_files <- list.files(pixy_folder, full.names = TRUE)
+pixy_files <- list.files(pixy_folder, full.names = TRUE, pattern = "common")
 pixy_df <- pixy_to_long(pixy_files)
 ```
 
-Just calculating genome wide nucleotide diversity (pi) in the different populations by just summing the numerator (differenced) and denominator (comparisons) and dividing
+```{r}
+# plotting the histograms
+pixy_df %>% filter(statistic == "avg_wc_fst" & pop1 == "NYC") %>%
+  ggplot() + geom_violin(aes(x=pop2, y = value, fill = pop2)) + theme_classic() +
+  labs(x= "Population", y = "Fst value", title = "Differentiation in introgressed regions")
+  
+```
+Huh, well. I did not expect that. This is still within introgression regions defined by NYC but, is there a difference between MENA and N_Europe?
+```{r}
+pixy_df %>% filter(statistic == "avg_wc_fst" & pop1 == "N_Europe") %>%
+  ggplot() + geom_violin(aes(x=pop2, y = value, fill = pop2)) + theme_classic() +
+  labs(x= "Population", y = "Fst value", title = "Differentiation in introgressed regions")
+```
+
+Just calculating genome wide nucleotide diversity (pi) in the different populations by just summing the numerator (differences) and denominator (comparisons) and dividing
 ```{r load genome wide pi}
 # calculated in windows of 10,000bp
 pi_w10000 <- read.csv("~/Documents/PhD/Research/capsella_introgression/pixy/nyc_allSites_CBP_pi.txt",
@@ -328,7 +371,11 @@ mena_subgenome_pi <- sum(mena_pi$count_diffs)/sum(mena_pi$count_comparisons)
 easia_pi <- pi_w10000[which(pi_w10000$pop == "E_Asia" & pi_w10000$no_sites > 0),]
 easia_subgenome_pi <- sum(easia_pi$count_diffs)/sum(easia_pi$count_comparisons)
 ```
-
+ PLot for Pi
+```{r}
+pi_w10000
+```
+ 
 
 Pixy Plot
 ```{r}
@@ -434,8 +481,6 @@ pixy_df %>%
   scale_color_brewer(palette = "Set1")
 ```
 I have a bed file so can I just do a PCA on the introgresed regions only (this is actually just the Lostruct analysis combined)
-
-
 
 #### Genic Content
 We may be interested in comparing the number of genes in introgressed regions vs non-introgressed regions. To do this, we can use BEDTools intersect to see how many basepairs of genes from a Genome Feature File (GFF) intersect with basepairs from introgressed or non-introgressed regions.
