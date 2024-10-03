@@ -339,15 +339,39 @@ pixy_df <- pixy_to_long(pixy_files)
 # plotting the histograms
 pixy_df %>% filter(statistic == "avg_wc_fst" & pop1 == "NYC") %>%
   ggplot() + geom_violin(aes(x=pop2, y = value, fill = pop2)) + theme_classic() +
-  labs(x= "Population", y = "Fst value", title = "Differentiation in introgressed regions")
+  scale_fill_manual(values = pop.cols) +
+  labs(x= "Population", y = "Fst value", title = "Differentiation in introgressed regions common in NYC",
+       caption = "common regions defined by presence in 60% or more of NYC population")
   
 ```
+```{r}
+# just selecting rows of interest
+nyc.fst <- pixy_df %>% filter(statistic == "avg_wc_fst" & (pop1 == "NYC" & pop2 %in% c("MENA", "N_Europe")))
+
+# fast and sloppy t-test
+t.test(value ~ pop2 , data = nyc.fst)
+
+
+# just curious about MENA and E. Asian
+nyc.fst2 <- pixy_df %>% filter(statistic == "avg_wc_fst" & (pop1 == "NYC" & pop2 %in% c("MENA", "E_Asia")))
+
+# fast and sloppy t-test
+t.test(value ~ pop2 , data = nyc.fst2)
+```
+
+
 Huh, well. I did not expect that. This is still within introgression regions defined by NYC but, is there a difference between MENA and N_Europe?
 ```{r}
 pixy_df %>% filter(statistic == "avg_wc_fst" & pop1 == "N_Europe") %>%
   ggplot() + geom_violin(aes(x=pop2, y = value, fill = pop2)) + theme_classic() +
   labs(x= "Population", y = "Fst value", title = "Differentiation in introgressed regions")
+
+neu.fst <- pixy_df %>% filter(statistic == "avg_wc_fst" & (pop1 == "N_Europe" & pop2 == "MENA"))
+
+# quick t-test
+t.test(neu.fst$value)
 ```
+Okay, that is fair. Keeping in mind, these are introgressed regions **defined by the NYC population**
 
 Just calculating genome wide nucleotide diversity (pi) in the different populations by just summing the numerator (differences) and denominator (comparisons) and dividing
 ```{r load genome wide pi}
@@ -371,7 +395,9 @@ mena_subgenome_pi <- sum(mena_pi$count_diffs)/sum(mena_pi$count_comparisons)
 easia_pi <- pi_w10000[which(pi_w10000$pop == "E_Asia" & pi_w10000$no_sites > 0),]
 easia_subgenome_pi <- sum(easia_pi$count_diffs)/sum(easia_pi$count_comparisons)
 ```
- PLot for Pi
+
+
+Plot for Pi
 ```{r}
 pi_w10000
 ```
