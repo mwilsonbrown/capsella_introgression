@@ -27,7 +27,7 @@ module purge
 module load tabixpp/1.1.2-GCC-12.3.0
 
 #### VARS
-VCF=/mnt/home/wils1582/allSites_CBP_final.filtered.vcf.gz
+VCF=/mnt/research/josephslab/Maya/CBP_AllSites_msu_final_filtered.vcf.gz
 POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops_NYC_ownpop.txt
 OUTDIR=/mnt/scratch/wils1582
 PREFIX=nyc_allSites_CBP
