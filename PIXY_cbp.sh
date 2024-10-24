@@ -73,5 +73,4 @@ BED=/mnt/home/wils1582/capsella_introgression/nyc_rubella_pixy.bed
  --window_size 10000 \
  --n_cores 10 \
  --output_folder "$OUTDIR" \
- --output_prefix "$PREFIX" \
- --bypass_invariant_check 'yes'
+ --output_prefix "$PREFIX"
