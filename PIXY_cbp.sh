@@ -27,50 +27,24 @@ module purge
 module load tabixpp/1.1.2-GCC-12.3.0
 
 #### VARS
-VCF=/mnt/research/josephslab/Maya/CBP_AllSites_msu_final_filtered.vcf.gz
+VCF=/mnt/scratch/wils1582/usa_capsella_noodles/cbp_all_msu_filt.vcf.gz
 POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops_NYC_ownpop.txt
 OUTDIR=/mnt/scratch/wils1582
 PREFIX=nyc_allSites_CBP
 
 # Optional VARS
-BED=/mnt/home/wils1582/capsella_introgression/nyc_rubella_pixy.bed
+BED=/mnt/scratch/wils1582/degenotate_out/degeneracy-4-fold-sites.txt 
 
 # # first, make sure the vcf is indexed
 # tabix $VCF 
 # 
-# # Run PIXY on each chromosome in windows
-# pixy --stats pi fst dxy \
-# --vcf $VCF \
-# --populations $POPS \
-# --window_size 10000 \
-# --n_cores 10 \
-# --output_folder "$OUTDIR"/ \
-# --output_prefix "$PREFIX"
-
-# Run PIXY on each site (much slower than windows)
-#pixy --stats pi fst dxy \
-#--vcf $VCF \
-#--populations $POPS \
-#--window_size 100 \
-#--n_cores 10 \
-#--output_folder "$OUTDIR"/ \
-#--output_prefix "$PREFIX" \
-#--bypass_invariant_check 'yes' \
-#--chromosomes 'jlSCF_10,jlSCF_11'
-
-# # Run PIXY on intervals using a bed file
-# pixy --stats pi fst dxy \
-# --vcf $VCF \
-# --populations $POPS \
-# --bed_file "$BED" \
-# --n_cores 10 \
-# --output_folder "$OUTDIR" \
-# --output_prefix "$PREFIX" \
-# --bypass_invariant_check 'yes'
  pixy --stats pi fst dxy \
+	--sites_file $BED \
+	--window_size 1 \
+	--chromosomes 'jlSCF_10' \
  --vcf $VCF \
  --populations $POPS \
- --window_size 10000 \
  --n_cores 10 \
  --output_folder "$OUTDIR" \
- --output_prefix "$PREFIX"
+ --output_prefix "$PREFIX" \
+	--bypass_invariant_check 'yes'
