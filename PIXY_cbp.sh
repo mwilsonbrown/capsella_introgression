@@ -7,10 +7,12 @@
 #SBATCH --time=0-10:00:00
 #SBATCH --partition=josephsnodes
 #SBATCH --account=josephsnodes
-#SBATCH --mem-per-cpu=8G
+#SBATCH --export=NONE
+#SBATCH --mem-per-cpu=32G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=wils1582@msu.edu
-#SBATCH --output=/mnt/scratch/wils1582/slurm/slurm-%A.out
+#SBATCH --array=1-16%3
+#SBATCH --output=/mnt/scratch/wils1582/slurm/slurm-%A_%a.out
 #
 # Population statistics with PIXY on C. bursa-pastoris
 # August 27, 2024
@@ -22,29 +24,26 @@ cd /mnt/scratch/wils1582
 #conda activate pixy
 source /mnt/home/wils1582/miniconda3/bin/activate pixy
 
-#modules
-module purge
-module load tabixpp/1.1.2-GCC-12.3.0
-
 #### VARS
 VCF=/mnt/scratch/wils1582/usa_capsella_noodles/cbp_all_msu_filt.vcf.gz
 POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops_NYC_ownpop.txt
-OUTDIR=/mnt/scratch/wils1582
+OUTDIR=/mnt/scratch/wils1582/4-fold_pi
 PREFIX=nyc_allSites_CBP
+CHROM=$(sed -n "$SLURM_ARRAY_TASK_ID"p /mnt/scratch/wils1582/degenotate_out/scaffold_names.txt)
 
 # Optional VARS
-BED=/mnt/scratch/wils1582/degenotate_out/degeneracy-4-fold-sites.txt 
+SITES=/mnt/scratch/wils1582/degenotate_out/degeneracy-4-fold-sites.txt 
 
-# # first, make sure the vcf is indexed
-# tabix $VCF 
-# 
- pixy --stats pi fst dxy \
-	--sites_file $BED \
+# generate output space
+
+# calculate pi 
+ pixy --stats pi \
+	--sites_file $SITES \
 	--window_size 1 \
-	--chromosomes 'jlSCF_10' \
+	--chromosomes "$CHROM" \
  --vcf $VCF \
  --populations $POPS \
  --n_cores 10 \
  --output_folder "$OUTDIR" \
- --output_prefix "$PREFIX" \
+ --output_prefix "$PREFIX"_"$CHROM" \
 	--bypass_invariant_check 'yes'
