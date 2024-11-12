@@ -11,3 +11,4 @@ ahmm_output/
 *.vcf
 *.vcf.gz
 test*
+pixy/nyc*

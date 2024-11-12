@@ -47,3 +47,14 @@ SITES=/mnt/scratch/wils1582/degenotate_out/degeneracy-4-fold-sites.txt
  --output_folder "$OUTDIR" \
  --output_prefix "$PREFIX"_"$CHROM" \
 	--bypass_invariant_check 'yes'
+	
+# calculate pi across genome in windows
+ pixy --stats pi \
+	--window_size 100 \
+	--chromosomes "$CHROM" \
+ --vcf $VCF \
+ --populations $POPS \
+ --n_cores 10 \
+ --output_folder "$OUTDIR" \
+ --output_prefix "$PREFIX"_"$CHROM" \
+	--bypass_invariant_check 'yes'
