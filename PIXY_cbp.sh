@@ -25,7 +25,7 @@ cd /mnt/scratch/wils1582
 source /mnt/home/wils1582/miniconda3/bin/activate pixy
 
 #### VARS
-VCF=/mnt/research/josephslab/Maya/CBP_AllSites_msu_maf.vcf.gz
+VCF=/mnt/research/josephslab/Maya/capsella/vcf/filtered/CBP_allsites_msu_maf.vcf.gz
 POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops_NYC_ownpop.txt
 OUTDIR=/mnt/scratch/wils1582/4-fold_pi
 PREFIX=nyc_allSites_CBP

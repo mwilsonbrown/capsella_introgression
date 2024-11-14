@@ -11,7 +11,7 @@
 #SBATCH --mem-per-cpu=32G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=wils1582@msu.edu
-#SBATCH --array=1-16%3
+#SBATCH --array=1-16%5
 #SBATCH --output=/mnt/scratch/wils1582/slurm/slurm-%A_%a.out
 #
 # Population statistics with PIXY on C. bursa-pastoris
@@ -25,7 +25,7 @@ cd /mnt/scratch/wils1582
 source /mnt/home/wils1582/miniconda3/bin/activate pixy
 
 #### VARS
-VCF=/mnt/research/josephslab/Maya/CBP_AllSites_msu_maf.vcf.gz
+VCF=/mnt/research/josephslab/Maya/capsella/vcf/filtered/CBP_allsites_msu_maf.vcf.gz
 POPS=/mnt/home/wils1582/capsella_introgression/pixy_pops_NYC_ownpop.txt
 OUTDIR=/mnt/scratch/wils1582/whole_genome_popgen
 PREFIX=nyc_allSites_CBP
