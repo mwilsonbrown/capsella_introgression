@@ -4,6 +4,9 @@
 
 
 # After running Pixy on all chromosomes separately, I concatenated all the data and then only selected rows for which there was a comparison made
+#cat nyc_allSites_CBP_jlSCF_* > nyc_allSites_CBP_all_pi.txt
+#awk '$8 ~ /[0-9]/' nyc_allSites_CBP_all_pi.txt > nyc_allSites_CBP_NoNA.txt
+
 # Libraries
 library(ggplot2)
 
@@ -16,7 +19,7 @@ pi$subgenome <- ifelse(pi$chromosome %in% c(paste0("jlSCF_", 1:8)), "CO", "CR")
 pi_poly <- ggplot() + geom_freqpoly(data = pi, aes(x=avg_pi, color = pop)) +
   theme_classic() +
   facet_grid(pop~subgenome)
-ggsave(filename = "~/Documents/PhD/Research/capsella_introgression/plots/pi_poly.png",
+ggsave(filename = "~/Documents/PhD/Research/capsella_introgression/plots/pi_poly2.png",
        pi_poly,
        width = 5, height = 6, units = "in")
 
