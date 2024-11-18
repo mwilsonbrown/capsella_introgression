@@ -56,7 +56,7 @@ mkdir -p $OUTDIR
 
 # calculate pi at 4-fold degenerate sites
  pixy --stats pi \
-	--sites_file $BED \
+	--bed_file $BED \
 	--chromosomes "$CHROM" \
  --vcf $VCF \
  --populations $POPS \
