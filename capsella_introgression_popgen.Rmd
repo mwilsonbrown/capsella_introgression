@@ -184,52 +184,6 @@ easia_allc <- viterbi_columns_plot_allChr(vit_all, population = c("E_Asia"))
 ggsave(paste0(temp_plotdir,"easia_viterbi_all4.png"),easia_allc, units = "in", height = 5, width = 5)
 ```
 
-
-Did not get the output I expected in that there are some very small regions in the East Asian population that seem to have C. rubella ancestry.
-```{r, eval=FALSE}
-# load posterior for sample SRR6179241.sam (AQ415)
-aq415 <- read.csv(paste0(ahmm_vit_path, "SRR6179241.sam.posterior"),
-                  header = T, sep = "\t")
-
-## have there always been very small regions shown as rubella in this population?
-# list all files with matching pattern from viterbi output folder
-tbl <- list.files(path = "~/Documents/PhD/Research/capsella_introgression/old_ahmm_output", pattern = "*.viterbi") 
-
-vit <- list()  # Create an empty list to store the data
-
-#loop to load sample data; each sample gets its own list element df
-for (file in tbl) {
-  file_path <- file.path("~/Documents/PhD/Research/capsella_introgression/old_ahmm_output", file)  # Get the full file path
-  vit[[file]] <- read.delim(file_path, header = F, col.names = c("chrom", "start", "end", "V4", "V5", "anc_state"))  # Read the file and store in the list
-}                                
-
-#change list element names
-names(vit) <- str_replace_all(names(vit), "[.]viterbi", "") #remove file suffix from name
-
-# add factors for ancestral state and add tract-length column
-vit <- lapply(vit, function(x) {data.frame(x) %>% mutate(ancestry = ifelse(anc_state == "2,0",
-                  "rubella", 
-                  ifelse(anc_state == "0,2",
-                         "bursa_pastoris",
-                         "heterozygous")), #assign ancestry
-                  tract_length = end-start)}
-                  ) # calculate tract lengths
-
-# concatenate the data tables for all the samples making a new column identifying the sample
-vit_all <- data.table::rbindlist(vit, idcol = "vcf_sample_name")
-
-# combine the sample info with viterbi decoding
-vit_all <- left_join(vit_all, k3pops)
-
-# order the scaffold levels
-vit_all$chrom <- factor(vit_all$chrom, levels = paste0("jlSCF_", 9:16))
-
-east_asian <- vit_all[which(vit_all$k3population == "E_Asia"),]
-
-```
-
-
-
 ###### Introgression .bed files
 To use this tool, I need a bed file of *C. rubella* regions for each sample separately.
 
