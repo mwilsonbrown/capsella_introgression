@@ -11,9 +11,12 @@
 args = commandArgs(trailingOnly=TRUE)
 
 # load variant missingness for parental samples
-p1_miss <- read.csv(as.character(arg[1]), sep = "\t", header = T)
-p2_miss <- read.csv(as.character(arg[2]), sep = "\t", header = T)
+p1_miss <- read.csv(args[1], sep = "\t", header = T)
+p2_miss <- read.csv(args[2], sep = "\t", header = T)
 
+# load libraries
+#library(dplyr)
+#library(ggplot2)
 # ### Plots
 # ggplot() +
 #   geom_freqpoly(data = p1_miss, aes(x=F_MISS, color=X.CHROM))
@@ -25,12 +28,20 @@ p2_miss <- read.csv(as.character(arg[2]), sep = "\t", header = T)
 # p1_miss_high <- p1_miss[which(p1_miss$F_MISS > as.numeric(arg[3])),]
 # 
 # p2_miss_high <- p2_miss[which(p2_miss$F_MISS > as.numeric(arg[3])),]
+#
+#remove sites with too many missing in p1
+p1_keep <- p1_miss[which(p1_miss$F_MISS < as.numeric(args[3])),]
+p2_keep <- p1_miss[which(p2_miss$F_MISS < as.numeric(args[3])),]
 
 #combine parental population missing frequencies
-f_miss <- left_join(p1_miss, p2_miss, join_by("X.CHROM", "POS"))
+#f_miss <- left_join(p1_miss, p2_miss, join_by("X.CHROM", "POS"))
+p_keep <- rbind(p1_keep, p2_keep)
+
+# remove duplicates
+keep <- p_keep[!duplicated(p_keep[1:2]),]
 
 # remove sites that have too many missing in either parental population
-keep <- f_miss[which(f_miss$F_MISS.x < as.numeric(arg[3]) & f_miss$F_MISS.y < as.numeric(arg[3])),]
+#keep <- f_miss[which(f_miss$F_MISS.x < as.numeric(args[3]) & f_miss$F_MISS.y < as.numeric(args[3])),]
 
 # write those sites to file
 write.table(keep[1:2], "keep_filt_sites.txt", 

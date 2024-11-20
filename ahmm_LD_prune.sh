@@ -28,9 +28,9 @@ ALL_SAMPLES="$OUTDIR"/sample_names.txt
 # move directories
 cd /mnt/scratch/wils1582/ahmm_workflow/
 # # purge modules
-# module purge
+module purge
 # # Load modules
-# ml PLINK/2.00a3.7-gfbf-2023a
+ml PLINK/2.00a3.7-gfbf-2023a
 #
 # # Sites in LD in C. rubella population
  plink2 --vcf $VCF \
@@ -79,6 +79,10 @@ plink2 --vcf "$VCF" \
   --double-id \
   --set-all-var-ids @:# \
   --out as_missing
+
+# modules 
+module purge
+module load R/4.4.1-gfbf-2023b
 
 # Combine variant missing files; remove those with high missing frequency, write new sites to file
 Rscript rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9
