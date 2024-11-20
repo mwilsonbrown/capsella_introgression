@@ -11,6 +11,8 @@ cd /mnt/scratch/wils1582/
 module purge
 module load BCFtools/1.19-GCC-13.2.0
 
+VCF=/mnt/research/josephslab/Maya/capsella/vcf/filtered/CBP_CRCGCONP_maf_final.vcf.gz
+
 # NYC Capsella bursa-pastoris C. rubella regions
 cut -f 1,2,3 /mnt/home/wils1582/capsella_introgression/nyc_multiinter_rubella.txt > ./nyc_cbp.bed
 sed -i '1d' nyc_cbp.bed
@@ -20,7 +22,7 @@ sed -i '1d' nyc_cbp.bed
 # because regions file had '.bed' suffix, regions are considered 0-based, half open
 # exclude Neslia paniculata, but leave in all other samples.
 
-bcftools query -f '%CHROM\t%POS[\t%GT]\n' /mnt/scratch/wils1582/july15/CBP_CRCG_final_filtered.vcf.gz \
+bcftools query -f '%CHROM\t%POS[\t%GT]\n' $VCF \
   --regions-file nyc_cbp.bed \
   --samples ^'ERR2990308.sam' |sed -e 's_|_/_g' > nyc_rubella_unphased_vcf.txt
 

@@ -20,6 +20,7 @@ library(dplyr)
 library(ggplot2)
 library(scico)
 library(ggnewscale)
+library(ggrepel)
 ```
 
 ```{r sourcing functions}
@@ -259,7 +260,7 @@ pca10_long$window <- factor(pca10_long$window, levels = as.character(which(idx =
 # Plots
 ```{r}
 pc_plot1 <- ggplot() +
-  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[101:120]), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[1:20]), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
 
@@ -268,13 +269,13 @@ pc_plot1
 
 
 ```{r}
-ggsave(paste0(plot_dir, "lostruct_pca_scf10_w101-120_noempty.png"), pc_plot1, width = 10, height = 6, units = "in")
+ggsave(paste0(plot_dir, "lostruct_pca_scf10_w1-20_noempty.png"), pc_plot1, width = 10, height = 6, units = "in")
 ```
 
 Single window at a time blown up
 ```{r}
 sc10w218 <- ggplot() +
-  geom_point(data=subset(pca10_long, window == "218" & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  geom_point(data=subset(pca10_long, window == "71" & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
   theme(strip.background =element_rect(fill="lightgrey"),
@@ -316,6 +317,91 @@ sc10w12
 ```{r}
 ggsave("lostruct_pca_scf10_window12.png", sc10w12, width = 10, height = 6, units = "in")
 ```
+
+### The rest of LOSTRUCT
+The rest of lostruct essentially makes a PCA of the local PCAs. I might be nice to be able to see what that is like.
+
+The next steps are to compute the distance matrix on the output of eigen_windows() and then visualize it.
+
+```{r}
+# Originally computed two PCs, I think I want at least 3
+# s10_500snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
+#               win = 500,
+#               k=2)
+s10_500snpk3 <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
+              win = 500,
+              k=3)
+
+# drop rows that are NA here as they correspond to windows without values
+idx <- apply(s10_500snpk3, 1, function(x) all(is.na(x))) #returns T for completely empty rows
+s10_500snpk3 <- s10_500snpk3[!idx,] # actually drops those rows
+
+# compute pairwise distance matrix between windows
+pcdist <- pc_dist(s10_500snpk3,npc=3)
+```
+Cool, now just to plot them.
+
+```{r}
+fit2d <- cmdscale(pcdist, eig=TRUE, k=3 )
+colnames(fit2d$points) <- c("MD1","MD2","MD3")
+
+#plot( fit2d$points, xlab="Coordinate 1", ylab="Coordinate 2", col=rainbow(1.2*nrow(pcdist)) )
+ggplot() +
+  geom_point(data = fit2d$points, aes(x=MD1, y = MD2, colour = row(fit2d$points)[,1]),
+             size = 3) +
+  geom_text_repel(data = fit2d$points, aes(x=MD1, y = MD2, label = row(fit2d$points)[,1]), max.overlaps = 50, size = 2) +
+  theme_classic()
+```
+
+```{r}
+ggplot() +
+  geom_point(data = fit2d$points, aes(x=MD1, y = MD3, colour = row(fit2d$points)[,1]),
+             size = 3) +
+  geom_text_repel(data = fit2d$points, aes(x=MD1, y = MD3, label = row(fit2d$points)[,1]), max.overlaps = 50, size = 2) +
+  theme_classic()
+```
+For some reason, my brain needs the 3D plot right now
+```{r}
+library(plotly)
+#make data frame
+dffit <- data.frame(fit2d$points)
+
+plot_ly(data = dffit, x=dffit$MD1, y = dffit$MD2, z = dffit$MD3, type="scatter3d", mode="markers", color = as.numeric(rownames(dffit)))
+```
+
+51,11,and 10 cluster closely for all 3 MDs.
+```{r}
+# which windows are they?
+names(pca10)[51]
+names(pca10)[11]
+names(pca10)[10]
+```
+Let's plot them
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[c(51,11,10)]), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+```
+
+Looking at extreme differences
+```{r}
+# which windows are they?
+names(pca10)[4]
+names(pca10)[23]
+names(pca10)[44]
+```
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[c(4,23,44)]), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+```
+
 
 ### Joining plots
 
