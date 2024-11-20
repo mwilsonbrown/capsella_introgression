@@ -26,7 +26,7 @@ To ensure that inferred *C. rubella* ancestry is absent in this group, I will le
 vcf_dat <- read.csv("~/Documents/PhD/Research/capsella_sample_info/generated_mkwb/Capsella_vcf_metadata.txt", sep = "\t", header = T)
 
 # load data about individuals actuallt remaining in VCF
-vcf_samp <- read.csv("~/Documents/PhD/Research/vcf_filtering/individuals/j19_in_vcf.txt",
+vcf_samp <- read.csv("~/Documents/PhD/Research/vcf_filtering/individuals/vcf_samples.txt",
                      sep = "\t",
                      header = F)
 
@@ -84,7 +84,6 @@ hmm_sample_mapping <- rbind(a_cbp, cr, q_cbp)
 write.table(hmm_sample_mapping, file = "~/Documents/PhD/Research/capsella_introgression/hmm_sample_mapping.txt", quote = F, row.names = F, col.names = F)
 ```
 
-Note: manually removed ERR636135.sam from cr samples
 ## Prune sites in linkage disequilibrium in parental populations
 
 In order to properly estimate LD that is due to Admixture, as opposed to LD present in the ancestral/parental populations, I need to prune LD from the parental populations separately, and then remove those SNPs from the admixed population that is to be evaluated.

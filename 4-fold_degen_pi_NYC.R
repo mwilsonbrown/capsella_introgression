@@ -19,7 +19,7 @@ pi$subgenome <- ifelse(pi$chromosome %in% c(paste0("jlSCF_", 1:8)), "CO", "CR")
 pi_poly <- ggplot() + geom_freqpoly(data = pi, aes(x=avg_pi, color = pop)) +
   theme_classic() +
   facet_grid(pop~subgenome)
-ggsave(filename = "~/Documents/PhD/Research/capsella_introgression/plots/pi_poly2.png",
+ggsave(filename = "~/Documents/PhD/Research/capsella_introgression/plots/pi_poly3.png",
        pi_poly,
        width = 5, height = 6, units = "in")
 
