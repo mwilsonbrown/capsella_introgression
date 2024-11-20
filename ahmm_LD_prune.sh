@@ -99,4 +99,4 @@ bcftools view --targets-file keep_filt_sites.txt --samples ^ERR2990308.sam $VCF 
   -Ov -o ahmm_pruned_all.vcf
 
 # convert VCF to Ancestry HMM input format
-python3 "$OUTDIR"/edit_vcf2ahmm.py -v ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt
+python3 "$OUTDIR"/edit_vcf2ahmm.py -v ahmm_pruned_all.vcf -s "$OUTDIR"/hmm_sample_mapping.txt > ahmm_pruned.input
