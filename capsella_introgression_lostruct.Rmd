@@ -224,7 +224,7 @@ Kind of silly to write my own window extractor function when all of the SNPs in 
 # ON scaffold 10, extract windows of 100 continuous SNPs (rows of matrix)
 s10_500snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
               win = 500,
-              k=2)
+              k=3)
 # drop rows that are NA here as they correspond to windows without values
 idx <- apply(s10_500snp, 1, function(x) all(is.na(x))) #returns T for completely empty rows
 s10_500snp <- s10_500snp[!idx,] # actually drops those rows
@@ -242,7 +242,7 @@ windows <- cbind(nyc_rubella_chr_snps[["jlSCF_10"]], window = as.character(winds
 
 ```{r reformat eigeninfo for scaffold 10}
 # apply reformatting function to each row of output matrix
-pca10 <- apply(s10_500snp, 1, reform_map, dat = s10_500snp)
+pca10 <- apply(s10_500snp, 1, reform_map2, dat = s10_500snp)
 
 #rename the list elements by their window
 names(pca10) <- as.character(which(idx == F))
@@ -287,6 +287,16 @@ sc10w218
 ggsave(paste0(plot_dir,"lostruct_pca_scf10_window218.png"), sc10w218, width = 7, height = 5, units = "in")
 ```
 
+```{r}
+sc10w218 <- ggplot() +
+  geom_point(data=subset(pca10_long, window == "71" & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC3, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
+sc10w218
+```
+
 To link these plots to the introgression results, now we combine the introgression plots above with shaded windows for the start and end SNPs
 
 ```{r}
@@ -302,6 +312,18 @@ sc10w10
 
 ```{r}
 ggsave("lostruct_pca_scf10_window10.png", sc10w10, width = 7, height = 5, units = "in")
+```
+
+with PC3 
+```{r}
+sc10w10 <- ggplot() +
+  geom_point(data=subset(pca10_long, window == 10 & k3pop_sm != "Capsella bursa-pastoris"), aes(x=PC1, y=PC3, color = k3pop_sm, shape= species), size = 3, alpha = 0.7) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(name = "population", values = species.cols, labels = pop.labels) +
+  theme(strip.background =element_rect(fill="lightgrey"),
+        strip.text = element_text(size = 15))
+
+sc10w10
 ```
 
 ```{r}
@@ -328,7 +350,7 @@ The next steps are to compute the distance matrix on the output of eigen_windows
 # s10_500snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
 #               win = 500,
 #               k=2)
-s10_500snpk3 <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
+s10_500snp <- lostruct::eigen_windows(data = genomat[["jlSCF_10"]],
               win = 500,
               k=3)
 
@@ -337,7 +359,7 @@ idx <- apply(s10_500snpk3, 1, function(x) all(is.na(x))) #returns T for complete
 s10_500snpk3 <- s10_500snpk3[!idx,] # actually drops those rows
 
 # compute pairwise distance matrix between windows
-pcdist <- pc_dist(s10_500snpk3,npc=3)
+pcdist <- pc_dist(s10_500snp,npc=3)
 ```
 Cool, now just to plot them.
 
