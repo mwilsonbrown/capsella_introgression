@@ -407,6 +407,15 @@ pc_plot1 <- ggplot() +
 
 pc_plot1
 ```
+Similar windows
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[c(51,11,10)]), aes(x=PC1, y=PC3, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+```
 
 Looking at extreme differences
 ```{r}
@@ -418,6 +427,14 @@ names(pca10)[44]
 ```{r}
 pc_plot1 <- ggplot() +
   geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[c(4,23,44)]), aes(x=PC1, y=PC2, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
+  scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
+  theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
+
+pc_plot1
+```
+```{r}
+pc_plot1 <- ggplot() +
+  geom_point(data=subset(pca10_long, k3pop_sm != "Capsella bursa-pastoris" & window %in% names(pca10)[c(4,23,44)]), aes(x=PC1, y=PC3, color = k3pop_sm, shape= species), size = 3, alpha = 0.5) +
   scale_shape_manual(values = c('Capsella\ grandiflora'=15, 'Capsella\ orientalis'=18, 'Capsella\ bursa-pastoris'=16, 'Capsella\ rubella'=17)) + 
   theme_classic() + facet_wrap(~window) + scale_color_manual(values = species.cols)
 
