@@ -1,0 +1,166 @@
+---
+title: "A deeper dive into Pi"
+author: "Maya Wilson Brown"
+date: "2025-01-14"
+output: html_document
+---
+
+Just working on a deeper and more regimented exploration of pi in our genome because I have very odd numbers.
+
+I was able to regenerate the results Adrian had on the other VCF with his code.
+```{bash}
+# what Adrian originally ran
+awk '{if($4!="N" && $5!="N" && $5!="." && $7!="LowQual" && length($4)==1 && length($5)==1 && substr($1,1,5)=="jlSCF" && $6>1000 && $6<16000){split($8,A,";");split(A[2],B,"=");if(B[2]>0.05 && B[2]<0.95){N++}};M++} END{print N "\t" M} ' /mnt/research/josephslab/Adrian/CBP_NYC_JLv4/CBP_JLv4_v_CBP.merged.v.all.vcf
+```
+
+Adrian annotated this command as:
+- Neither Reference nor Alternate are = N
+- Alternate is not equal to Ref (I would have said alternate is not missing but they are functionally the same)
+- Must not be a low quality call
+- Reference and ALT are single nucleotides
+
+When I run this on what I presume to be the AllSites VCF with MSU sequencing, I get a similar result
+```{bash}
+awk '{if($4!="N" && $5!="N" && $5!="." && $7!="LowQual" && length($4)==1 && length($5)==1 && substr($1,1,5)=="jlSCF" && $6>1000 && $6<16000){split($8,A,";");split(A[2],B,"=");if(B[2]>0.05 && B[2]<0.95){N++}};M++} END{print N "\t" M} ' /mnt/research/josephslab/Adrian/CBP_NYC_JLv4/CBP_JLv4_v_CBP.msu.merged.v.all.vcf
+```
+Which outputs 1894078	351110021
+
+Dividing these numbers
+```{r}
+1894078/351110021
+```
+
+This number represents S, the number of segregating sites, which should be the upper limit of Pi. Expected Pi is theta which is equal to S/(1+(1/2)+(1/3)+(1/4)...1(k-1)) where K is the number of sequences in the sample.
+That is much more aligned with previous estimates of genome wide Pi, so the goal now is to make the filtering process match Adrian's awk command.
+
+~~I have a suspicion this all has to do with low quality scores not being filtered properly.~~
+
+Seems to not currently be the case. I do filter off a bunch of low quality scores and am left with only those that have PASS in the FILTER column. I compared the raw VCF to the one I am left with after filtering
+```{bash}
+# produces output
+bcftools query -i'FILTER="LowQual"' -f'%CHROM %POS %QUAL %FILTER\n' /mnt/research/josephslab/Adrian/CBP_NYC_JLv4/CBP_JLv4_v_CBP.msu.merged.v.all.vcf | head
+
+# does not produce output when the VCF is changed
+bcftools query -i'FILTER="LowQual"' -f'%CHROM %POS %QUAL %FILTER\n' /mnt/research/josephslab//Maya/capsella/vcf/filtered/CBP_AllSites_msu_qual_filtered.vcf.gz | head
+```
+
+When I run the awk command on the VCFs generated after filtering, I get much higher values of S
+```{bash}
+# after quality filtering
+zcat /mnt/research/josephslab/Maya/capsella/vcf/filtered/CBP_AllSites_msu_qual_filtered.vcf.gz | awk '{if($4!="N" && $5!="N" && $5!="." && $7!="LowQual" && length($4)==1 && length($5)==1 && substr($1,1,5)=="jlSCF" && $6>1000 && $6<16000){split($8,A,";");split(A[2],B,"=");if(B[2]>0.05 && B[2]<0.95){N++}};M++} END{print N "\t" M}'
+
+#after filtering for MAF in the variant sites
+zcat /mnt/research/josephslab/Maya/capsella/vcf/filtered/CBP_allsites_msu_maf.vcf.gz | awk '{if($4!="N" && $5!="N" && $5!="." && $7!="LowQual" && length($4)==1 && length($5)==1 && substr($1,1,5)=="jlSCF" && $6>1000 && $6<16000){split($8,A,";");split(A[2],B,"=");if(B[2]>0.05 && B[2]<0.95){N++}};M++} END{print N "\t" M}'
+```
+
+Which return 221953	4358143 and 546271	4286274 respectively.
+```{r}
+# after quality filtering
+221953/4358143
+# after quality and MAF filtering
+546271/4286274
+```
+
+So, it certainly seems that the issue is with filtering. I do not know exactly where it goes wrong so we are just going to work through it and find what's up.
+
+```{bash, code = readLines("~/Documents/PhD/Research/vcf_filtering/AllSites_msu_maf_filter.sh"), eval = FALSE}
+
+```
+
+
+Then, from the filtered VCF, I run PIXY
+```{bash, code = readLines("~/Documents/PhD/Research/capsella_introgression/"), eval = FALSE}
+
+```
+
+# Windowed population genetics in C. bursa-pastoris
+```{r}
+# this is with any region of introgression in NYC
+pixy_folder <- "~/Documents/PhD/Research/capsella_introgression/pixy/"
+
+dxy <- read.delim(paste0(pixy_folder, "w100_nyc_allSites_CBP_allchrom_dxy.txt"),
+                  sep = "\t", header = T)
+pi <- read.delim(paste0(pixy_folder, "w100_nyc_allSites_CBP_allchrom_pi.txt"),
+                  sep = "\t", header = T)
+pi_clean <- pi %>%
+  mutate_at(vars("window_pos_1","window_pos_2","avg_pi","no_sites","count_diffs", "count_comparisons","count_missing"), as.numeric)
+
+fst <- read.delim(paste0(pixy_folder, "w100_nyc_allSites_CBP_allchrom_fst.txt"),
+                  sep = "\t", header = T)
+```
+
+Whole genome average pi per population
+```{r}
+#for NYC
+nyc_pi <- pi_clean[which(pi_clean$pop == "NYC"),]
+# average Pi in NYC
+sum(nyc_pi$count_diffs, na.rm = T)/sum(nyc_pi$count_comparisons, na.rm = T)
+```
+
+```{r}
+#for N. Eurasia
+neu_pi <- pi_clean[which(pi_clean$pop == "N_Europe"),]
+# average Pi in Northern Eurasia
+sum(neu_pi$count_diffs, na.rm = T)/sum(neu_pi$count_comparisons, na.rm = T)
+```
+```{r}
+#for East Asia
+easia_pi <- pi_clean[which(pi_clean$pop == "E_Asia"),]
+# average Pi in E. Asia
+sum(easia_pi$count_diffs, na.rm = T)/sum(easia_pi$count_comparisons, na.rm = T)
+```
+
+```{r}
+#for Mediterranean
+mena_pi <- pi_clean[which(pi_clean$pop == "MENA"),]
+# average Pi in Mediterranean
+sum(mena_pi$count_diffs, na.rm = T)/sum(mena_pi$count_comparisons, na.rm = T)
+```
+Plotting output for PIXY
+```{r}
+#remove NA rows
+pi_clean <- pi_clean[complete.cases(pi_clean),]
+#adding subgenome indicator
+pi_clean$subgenome <- ifelse(pi_clean$chromosome %in% c(paste0("jlSCF_", 1:8)), "CO", "CG")
+```
+
+```{r}
+#actual plot
+ggplot(pi_clean, aes(x=factor(subgenome),y=avg_pi,fill=factor(subgenome)))+
+  geom_boxplot() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by PIXY in 100kb windows", x="Subgenome")
+```
+
+Looking at Pi calculations from VCFtools because I believe it will give similar values to other Capsella papers.
+```{r}
+# load data
+med_v_pi <- read.delim(paste0(pixy_folder, "vcftools-pi_med.windowed.pi"),
+                       header = T, sep = "\t")
+med_v_pi$POP <- "med"
+
+neu_v_pi <- read.delim(paste0(pixy_folder, "vcftools-pi_neu.windowed.pi"),
+                       header = T, sep = "\t")
+neu_v_pi$POP <- "neu"
+
+nyc_v_pi <- read.delim(paste0(pixy_folder, "vcftools-pi_nyc.windowed.pi"),
+                       header = T, sep = "\t")
+nyc_v_pi$POP <- "nyc"
+
+asi_v_pi <- read.delim(paste0(pixy_folder, "vcftools-pi_asi.windowed.pi"),
+                       header = T, sep = "\t")
+asi_v_pi$POP <- "asi"
+
+vcftools_pi <- rbind(asi_v_pi,med_v_pi,neu_v_pi,nyc_v_pi)
+```
+
+```{r}
+# annotate subgenomes
+# add an indicator for the subgenome each chromosome belongs to
+vcftools_pi$subgenome <- ifelse(vcftools_pi$CHROM %in% c(paste0("jlSCF_", 1:8)), "CO", "CG")
+```
+
+plot
+```{r}
+ggplot(vcftools_pi, aes(x=factor(subgenome),y=PI,fill=factor(subgenome)))+
+  geom_boxplot() +facet_wrap(~POP, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by VCFtools in 100kb windows", x="Subgenome")
+```
+
