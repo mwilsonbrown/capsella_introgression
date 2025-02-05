@@ -293,7 +293,7 @@ pixy_df <- pixy_to_long(pixy_files)
 # plotting the histograms
 pixy_df %>% filter(statistic == "avg_wc_fst" & pop1 == "NYC") %>%
   ggplot() + geom_violin(aes(x=pop2, y = value, fill = pop2)) + theme_classic() +
-  scale_fill_manual(values = pop.cols) +
+  scale_fill_manual(values = species.cols) +
   labs(x= "Population", y = "Fst value", title = "Differentiation in introgressed regions common in NYC",
        caption = "common regions defined by presence in 60% or more of NYC population")
   

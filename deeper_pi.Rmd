@@ -127,7 +127,7 @@ pi_clean$subgenome <- ifelse(pi_clean$chromosome %in% c(paste0("jlSCF_", 1:8)), 
 ```{r}
 #actual plot
 ggplot(pi_clean, aes(x=factor(subgenome),y=avg_pi,fill=factor(subgenome)))+
-  geom_boxplot() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by PIXY in 100kb windows", x="Subgenome")
+  geom_violin() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by PIXY in 100kb windows", x="Subgenome")
 ```
 
 Looking at Pi calculations from VCFtools because I believe it will give similar values to other Capsella papers.
@@ -161,6 +161,56 @@ vcftools_pi$subgenome <- ifelse(vcftools_pi$CHROM %in% c(paste0("jlSCF_", 1:8)),
 plot
 ```{r}
 ggplot(vcftools_pi, aes(x=factor(subgenome),y=PI,fill=factor(subgenome)))+
-  geom_boxplot() +facet_wrap(~POP, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by VCFtools in 100kb windows", x="Subgenome")
+  geom_violin() +facet_wrap(~POP, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by VCFtools in 100kb windows", x="Subgenome")
+```
+
+```{r}
+pixy_folder <- "~/Documents/PhD/Research/capsella_introgression/pixy/"
+pi4_1 <- read.delim(paste0(pixy_folder, "nyc_4-fold_CBP_jlSCF_1_pi.txt"),
+                  sep = "\t", header = T)
+pi4_2 <- read.delim(paste0(pixy_folder, "nyc_4-fold_CBP_jlSCF_2_pi.txt"),
+                  sep = "\t", header = T)
+```
+
+They are apparently the same, so I do not need to split the calculations by chromosome.
+```{r}
+#checking the files are the same
+nrow(dplyr::intersect(pi4_1, pi4_2))
+```
+
+Pi at 4-fold degenerate sites
+```{r}
+sum(pi4_1$count_diffs)/sum(pi4_1$count_comparisons)
+```
+And split by population
+```{r}
+sum(pi4_1[which(pi4_1$pop == "NYC"),]$count_diffs)/sum(pi4_1[which(pi4_1$pop == "NYC"),]$count_comparisons)
+
+sum(pi4_1[which(pi4_1$pop == "N_Europe"),]$count_diffs)/sum(pi4_1[which(pi4_1$pop == "N_Europe"),]$count_comparisons)
+sum(pi4_1[which(pi4_1$pop == "MENA"),]$count_diffs)/sum(pi4_1[which(pi4_1$pop == "MENA"),]$count_comparisons)
+sum(pi4_1[which(pi4_1$pop == "E_Asia"),]$count_diffs)/sum(pi4_1[which(pi4_1$pop == "E_Asia"),]$count_comparisons)
+```
+
+```{r}
+# add subgenome indicator to data
+pi4_1$subgenome <- ifelse(pi4_1$chromosome %in% c(paste0("jlSCF_", 1:8)), "CO", "CG")
+```
+
+```{r}
+ggplot(pi4_1, aes(x=factor(subgenome),y=avg_pi,fill=factor(subgenome)))+
+  geom_violin() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity at 4-fold degenerate sites", x="Subgenome")
+```
+truncated
+```{r}
+ggplot(pi4_1, aes(x=factor(subgenome),y=avg_pi,fill=factor(subgenome)))+
+  geom_boxplot() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + ylim(-0.05, 0.1) + theme_classic() + labs(title = "Nucleotide diversity at 4-fold degenerate sites", x="Subgenome")
+```
+Okay, a manhattan plot might actually be a better way to visualize this
+```{r}
+pi4_1 %>% mutate(chromosome = factor(chromosome, levels = paste0("jlSCF_", 1:16))) %>% ggplot(aes(x = window_pos_1 , y = avg_pi, color = pop)) + 
+  geom_point(size = 0.3, alpha = 0.5)+
+  facet_grid(pop~chromosome, scales = "free") + theme_classic()
+
+ggsave("pi_4fold.png", width = 15, height = 9, units = "in")
 ```
 
