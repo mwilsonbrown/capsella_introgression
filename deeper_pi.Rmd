@@ -89,7 +89,7 @@ fst <- read.delim(paste0(pixy_folder, "w100_nyc_allSites_CBP_allchrom_fst.txt"),
                   sep = "\t", header = T)
 ```
 
-Whole genome average pi per population
+# Whole genome average pi per population
 ```{r}
 #for NYC
 nyc_pi <- pi_clean[which(pi_clean$pop == "NYC"),]
@@ -127,7 +127,7 @@ pi_clean$subgenome <- ifelse(pi_clean$chromosome %in% c(paste0("jlSCF_", 1:8)), 
 ```{r}
 #actual plot
 ggplot(pi_clean, aes(x=factor(subgenome),y=avg_pi,fill=factor(subgenome)))+
-  geom_violin() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by PIXY in 100kb windows", x="Subgenome")
+  geom_boxplot() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by PIXY in 100kb windows", x="Subgenome")
 ```
 
 Looking at Pi calculations from VCFtools because I believe it will give similar values to other Capsella papers.
@@ -161,7 +161,7 @@ vcftools_pi$subgenome <- ifelse(vcftools_pi$CHROM %in% c(paste0("jlSCF_", 1:8)),
 plot
 ```{r}
 ggplot(vcftools_pi, aes(x=factor(subgenome),y=PI,fill=factor(subgenome)))+
-  geom_violin() +facet_wrap(~POP, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by VCFtools in 100kb windows", x="Subgenome")
+  geom_boxplot() +facet_wrap(~POP, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity calculated by VCFtools in 100kb windows", x="Subgenome")
 ```
 
 ```{r}
@@ -198,7 +198,7 @@ pi4_1$subgenome <- ifelse(pi4_1$chromosome %in% c(paste0("jlSCF_", 1:8)), "CO", 
 
 ```{r}
 ggplot(pi4_1, aes(x=factor(subgenome),y=avg_pi,fill=factor(subgenome)))+
-  geom_violin() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity at 4-fold degenerate sites", x="Subgenome")
+  geom_boxplot() +facet_wrap(~pop, ncol = 4) + scale_fill_manual(values = c("CO" = "lightblue", "CG"="orange")) + theme_classic() + labs(title = "Nucleotide diversity at 4-fold degenerate sites", x="Subgenome")
 ```
 truncated
 ```{r}

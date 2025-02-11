@@ -269,6 +269,132 @@ write.table(com_nyc[,1:3], file = "~/Desktop/common_introgressed_nyc.bed",
 
 ```
 
+# Is nucleotide diversity assiciated with freqency in introgressed regions?
+Might tell us something about the age, diversity, and frequency of introgressed regions?
+```{r}
+# load the multiinter data for all the CBPs
+pixy_folder <- "~/Documents/PhD/Research/capsella_introgression/pixy/"
+
+all_multi <- read.csv(paste0(pixy_folder, "all_multiinter_rubella.txt"), sep = "\t")
+
+# load pi calculations
+intro_pi <- read.csv(paste0(pixy_folder, "all_multiinter_popstats_pi.txt"), sep = "\t")
+```
+want to clean up this table and make it more functional
+```{r}
+#associate list values with sample names
+# subtracting 5 for the first 5 columns of df to get the index right
+nyc_num <- grep("NYC",names(all_multi))-5
+med_num <- grep("MENA",names(all_multi))-5
+neu_num <- grep("N_Europe",names(all_multi))-5
+```
+
+```{r}
+all_multi <- all_multi[,1:5]
+```
+Do the populations have the same distributuin of chunk lengths?
+
+Look at potential age of introgressed regions
+```{r}
+# plot chunk length against number of individuals who have it
+all_multi %>% mutate(chunk_length = end - start) %>% 
+  ggplot() + geom_point(aes(x=num, y = chunk_length, color = chrom)) + theme_classic()
+```
+Is there an association by population?
+```{r}
+cc %>% mutate(chunk_length = end - start) %>% 
+  ggplot() + geom_point(aes(x=NYC_count, y = chunk_length, color = chrom)) + theme_classic()
+```
+```{r}
+cc %>% mutate(chunk_length = end - start) %>% 
+  ggplot() + geom_point(aes(x=MENA_count, y = chunk_length, color = chrom)) + theme_classic()
+```
+```{r}
+cc %>% mutate(chunk_length = end - start) %>% 
+  ggplot() + geom_point(aes(x=Neu_count, y = chunk_length, color = chrom)) + theme_classic()
+```
+
+
+```{r}
+# make a function to apply to each row
+count_pop <- function(x){
+  # convert list of indices to vector
+  nu <- as.numeric(str_split_1(x["list"], pattern = ","))
+  # total how many elements of vector are in each group
+  nyc_c <- length(intersect(nu, nyc_num))
+  med_c <- length(intersect(nu, med_num))
+  neu_c <- length(intersect(nu, neu_num))
+  
+  # return the tibble
+  tibble("NYC_count"=nyc_c, "MENA_count"=med_c, "Neu_count"=neu_c)
+}
+
+# apply function by row
+test <- apply(all_multi, 1, count_pop)
+
+# unlist to data frame
+c_table <- bind_rows(test)
+# join with multiinter data
+c_all_multi <- cbind(all_multi, c_table)
+```
+
+```{r}
+# add proportion columns
+cc <- c_all_multi %>% mutate(
+  p_NYC = NYC_count/num,
+  p_MENA = MENA_count/num,
+  p_NEU = Neu_count/num
+)
+```
+
+```{r}
+# join multiinter data and pi data
+pi_bed <- left_join(intro_pi, cc, join_by("chromosome" == "chrom",
+                                          "window_pos_1" == "start",
+                                          "window_pos_2" == "end"))
+```
+
+Let's just look at Pi along the genome first
+```{r}
+intro_pi %>%  mutate(position = (window_pos_1+window_pos_2)/2) %>% ggplot() +
+  geom_point(aes(x=position, y=avg_pi, color = pop)) +
+  facet_wrap(~chromosome, scales = "free", ncol = 1) +
+  theme_classic()
+  
+ggsave("~/Desktop/introgressed_pi.png", height = 10, width = 6, units = "in")
+```
+
+
+```{r}
+# first plot
+ggplot(data = pi_bed, aes(x=num, y = avg_pi, color = pop)) +
+  geom_point() + theme_classic()
+```
+
+Then to see if there is an associattion between average nucleotide diversity and how common it is in each population.
+```{r}
+ggplot(data = pi_bed, aes(x=num, y = avg_pi)) +
+  geom_point() + theme_classic()
+```
+
+Okay, let's just think about NYC for now.
+```{r}
+# semi arbitrary but lets say common is in 48 NYC individuals or more
+test <- pi_bed %>% mutate(frq_nyc = case_when(NYC_count >= 48 ~ "common",
+                                              NYC_count < 48 ~ "uncommon"),
+                          chunk_length = window_pos_2 - window_pos_1)
+```
+
+
+```{r}
+ggplot(data = subset(test, pop == "NYC")) + geom_violin(aes(x=frq_nyc, y=avg_pi, fill = frq_nyc), alpha = 0.4) + geom_point(data = subset(test, pop == "NYC"), aes(x=frq_nyc, y=avg_pi, color = frq_nyc) ) + theme_classic()
+```
+```{r}
+ggplot(data = subset(test, pop == "NYC")) + geom_violin(aes(x=frq_nyc, y=chunk_length, fill = frq_nyc), alpha = 0.4) + geom_point(data = subset(test, pop == "NYC"), aes(x=frq_nyc, y=chunk_length, color = frq_nyc) ) + theme_classic()
+```
+```{r}
+ggplot(data = subset(test, pop == "NYC")) + geom_point(aes(x=chunk_length, y=avg_pi, color = frq_nyc))
+```
 
 Another analysis that may be interesting is to look at PI (pairwise diversity) along the genome within NYC populations to identify regions with higher or lower PI than expected?
 
