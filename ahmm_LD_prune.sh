@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash --login
 #
 #SBATCH --job-name=ahmmLDPrune
 #SBATCH --nodes=10
@@ -10,7 +10,7 @@
 #SBATCH --mem-per-cpu=8G
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=wils1582@msu.edu
-#SBATCH --output=/mnt/scratch/wils1582/slurm/slurm-%A_%a.out
+#SBATCH --output=/mnt/scratch/wils1582/slurm/slurm-%A.out
 #
 # Ancestry HMM LD Pruning
 # Prune LD SNPs in parental populations for Ancestry HMM analysis
@@ -19,18 +19,21 @@
 # July 3, 2024
 
 ### VARIABLES
-VCF=/mnt/research/josephslab/Maya/capsella/vcf/filtered/CBP_CRCGCONP_maf_final.vcf.gz
+#VCF=/mnt/research/josephslab/Maya/capsella/vcf/filtered/CBP2_CR_CG_on_CBP-CG_qualMAF_snps_only.vcf.gz
+VCF=/mnt/scratch/wils1582/CBP2_CR_CG_on_CBP-CG_filtering/CBP2_CR_CG_on_CBP-CG_rmdup_qualMAF_snps_only.vcf.gz
 OUTDIR=/mnt/home/wils1582/capsella_introgression
 CR="$OUTDIR"/c_rubella.txt
 AS_CBP="$OUTDIR"/eAsia_cbp.txt
 ALL_SAMPLES="$OUTDIR"/sample_names.txt
+WORKDIR=/mnt/scratch/wils1582/ahmm_workflow
 
 # move directories
-cd /mnt/scratch/wils1582/ahmm_workflow/
+mkdir -p $WORKDIR
+cd $WORKDIR
 # # purge modules
 module purge
 # # Load modules
-ml PLINK/2.00a3.7-gfbf-2023a
+module load PLINK/2.00a3.7-gfbf-2023a
 #
 # # Sites in LD in C. rubella population
  plink2 --vcf $VCF \
@@ -47,7 +50,7 @@ ml PLINK/2.00a3.7-gfbf-2023a
  --keep $AS_CBP \
  --allow-extra-chr \
  --set-all-var-ids @:# \
- --bad-ld
+ --bad-ld \
  --out eAsia_CBP
 
 # Combine sites
@@ -85,7 +88,7 @@ module purge
 module load R/4.4.1-gfbf-2023b
 
 # Combine variant missing files; remove those with high missing frequency, write new sites to file
-Rscript rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9
+Rscript "$OUTDIR"/rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9
 
 # Plink removes the allele depth feild from the vcf and I need that to convert to AHMM format
 # so we will prune with bcftools (which I also forgot last time)
@@ -93,9 +96,9 @@ Rscript rmParentalMissing.R cr_missing.vmiss as_missing.vmiss 0.9
 # remove them from kept sites file
 # purge and load modules
 module purge
-ml BCFtools/1.19-GCC-13.2.0
-# use bcftools to select only sites in keep_sites file; also remove NP here
-bcftools view --targets-file keep_filt_sites.txt --samples ^ERR2990308.sam $VCF \
+module load BCFtools/1.19-GCC-13.2.0
+# use bcftools to select only sites in keep_sites file
+bcftools view --targets-file keep_filt_sites.txt $VCF \
   -Ov -o ahmm_pruned_all.vcf
 
 # convert VCF to Ancestry HMM input format
